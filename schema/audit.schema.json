@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ImaAkito/project-intelligence-auditor/schema/audit.schema.json",
+  "title": "Project Intelligence Audit",
+  "type": "object",
+  "required": ["metadata", "project", "modules", "scores", "risks", "recommendations"],
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "required": ["generated_at", "auditor_version"],
+      "properties": {
+        "generated_at": {"type": "string"},
+        "auditor_version": {"type": "string"},
+        "repository": {"type": ["string", "null"]},
+        "commit": {"type": ["string", "null"]}
+      },
+      "additionalProperties": true
+    },
+    "project": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {"type": "string"},
+        "mission": {"type": ["string", "null"]},
+        "target_users": {"type": "array", "items": {"type": "string"}},
+        "current_stage": {"type": ["string", "null"]},
+        "trl": {"type": ["integer", "null"], "minimum": 1, "maximum": 9}
+      },
+      "additionalProperties": true
+    },
+    "scores": {
+      "type": "object",
+      "properties": {
+        "confirmed_completion": {"$ref": "#/$defs/scoreOrNull"},
+        "estimated_completion": {"$ref": "#/$defs/scoreOrNull"},
+        "project_health": {"$ref": "#/$defs/scoreOrNull"},
+        "prototype_readiness": {"$ref": "#/$defs/scoreOrNull"},
+        "mvp_readiness": {"$ref": "#/$defs/scoreOrNull"},
+        "commercial_readiness": {"$ref": "#/$defs/scoreOrNull"},
+        "production_readiness": {"$ref": "#/$defs/scoreOrNull"},
+        "scale_readiness": {"$ref": "#/$defs/scoreOrNull"},
+        "research_readiness": {"$ref": "#/$defs/scoreOrNull"},
+        "confidence": {"$ref": "#/$defs/scoreOrNull"}
+      },
+      "additionalProperties": {"$ref": "#/$defs/scoreOrNull"}
+    },
+    "modules": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/module"}
+    },
+    "evidence": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/evidence"}
+    },
+    "risks": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/risk"}
+    },
+    "technical_debt": {
+      "type": "array",
+      "items": {"type": "object", "additionalProperties": true}
+    },
+    "directions": {
+      "type": "array",
+      "items": {"type": "object", "additionalProperties": true}
+    },
+    "recommendations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title"],
+        "properties": {
+          "id": {"type": "string"},
+          "title": {"type": "string"},
+          "priority": {"type": ["string", "null"]},
+          "impact": {"type": ["number", "null"]},
+          "effort": {"type": ["string", "number", "null"]},
+          "definition_of_done": {"type": ["string", "null"]}
+        },
+        "additionalProperties": true
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "history": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "scoreOrNull": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "maximum": 100
+    },
+    "module": {
+      "type": "object",
+      "required": ["id", "name"],
+      "properties": {
+        "id": {"type": "string"},
+        "name": {"type": "string"},
+        "classification": {
+          "type": "string",
+          "enum": ["critical_path", "important", "optional", "experimental", "legacy", "dead", "unknown"]
+        },
+        "implementation": {"$ref": "#/$defs/scoreOrNull"},
+        "integration": {"$ref": "#/$defs/scoreOrNull"},
+        "validation": {"$ref": "#/$defs/scoreOrNull"},
+        "documentation": {"$ref": "#/$defs/scoreOrNull"},
+        "operational_readiness": {"$ref": "#/$defs/scoreOrNull"},
+        "completion": {"$ref": "#/$defs/scoreOrNull"},
+        "confirmed_completion": {"$ref": "#/$defs/scoreOrNull"},
+        "quality": {"$ref": "#/$defs/scoreOrNull"},
+        "confidence": {"$ref": "#/$defs/scoreOrNull"},
+        "criticality": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "evidence_level": {"type": "string", "enum": ["E0", "E1", "E2", "E3", "E4"]},
+        "dependencies": {"type": "array", "items": {"type": "string"}},
+        "evidence_ids": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": true
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["id", "level", "claim"],
+      "properties": {
+        "id": {"type": "string"},
+        "level": {"type": "string", "enum": ["E0", "E1", "E2", "E3", "E4"]},
+        "claim": {"type": "string"},
+        "kind": {"type": ["string", "null"]},
+        "source": {"type": ["string", "null"]},
+        "location": {"type": ["string", "null"]},
+        "confidence": {"type": ["number", "null"], "minimum": 0, "maximum": 1}
+      },
+      "additionalProperties": true
+    },
+    "risk": {
+      "type": "object",
+      "required": ["id", "title", "probability", "impact"],
+      "properties": {
+        "id": {"type": "string"},
+        "title": {"type": "string"},
+        "probability": {"type": "integer", "minimum": 1, "maximum": 5},
+        "impact": {"type": "integer", "minimum": 1, "maximum": 5},
+        "score": {"type": ["integer", "null"], "minimum": 1, "maximum": 25},
+        "category": {"type": ["string", "null"]},
+        "mitigation": {"type": ["string", "null"]}
+      },
+      "additionalProperties": true
+    }
+  }
+}
