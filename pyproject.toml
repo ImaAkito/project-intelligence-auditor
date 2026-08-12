@@ -1,9 +1,13 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "project-intelligence-auditor"
 version = "0.2.0"
 description = "Evidence-based Codex skill and tooling for technical, product, research, and commercial project auditing."
 requires-python = ">=3.10"
-license = {text = "MIT"}
+license = "MIT"
 authors = [{name = "ImaAkito"}]
 dependencies = [
   "jsonschema>=4.21,<5"
@@ -14,6 +18,9 @@ dev = [
   "pytest>=8,<9",
   "ruff>=0.12,<1"
 ]
+
+[tool.setuptools]
+packages = []
 
 [tool.pytest.ini_options]
 addopts = "-q"
