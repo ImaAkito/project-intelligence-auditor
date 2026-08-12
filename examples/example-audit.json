@@ -1,0 +1,84 @@
+{
+  "metadata": {
+    "generated_at": "2026-08-13T00:00:00+03:00",
+    "auditor_version": "0.1.0",
+    "repository": "example/project",
+    "commit": "example"
+  },
+  "project": {
+    "name": "Example Project",
+    "mission": "Demonstrate the Project Intelligence Auditor data contract.",
+    "target_users": ["developers"],
+    "current_stage": "prototype",
+    "trl": 4
+  },
+  "scores": {
+    "confirmed_completion": 57.8,
+    "estimated_completion": 68.0,
+    "project_health": 72.0,
+    "prototype_readiness": 82.0,
+    "mvp_readiness": 61.0,
+    "commercial_readiness": 38.0,
+    "production_readiness": 44.0,
+    "scale_readiness": 29.0,
+    "confidence": 84.0
+  },
+  "modules": [
+    {
+      "id": "core",
+      "name": "Core workflow",
+      "classification": "critical_path",
+      "implementation": 80,
+      "integration": 75,
+      "validation": 65,
+      "documentation": 55,
+      "operational_readiness": 45,
+      "completion": 68.0,
+      "confirmed_completion": 57.8,
+      "quality": 72,
+      "confidence": 84,
+      "criticality": 1.0,
+      "evidence_level": "E3",
+      "dependencies": [],
+      "evidence_ids": ["ev-core-test"]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "ev-core-test",
+      "level": "E3",
+      "claim": "The core workflow is exercised by a reproducible test.",
+      "kind": "test_result",
+      "source": "tests/test_core.py",
+      "location": "test_core_workflow",
+      "confidence": 0.9
+    }
+  ],
+  "risks": [
+    {
+      "id": "risk-runtime",
+      "title": "Runtime failure handling is incomplete",
+      "probability": 3,
+      "impact": 4,
+      "score": 12,
+      "category": "operational",
+      "mitigation": "Add integration failure tests and explicit recovery paths."
+    }
+  ],
+  "technical_debt": [],
+  "directions": [],
+  "recommendations": [
+    {
+      "id": "rec-integration-tests",
+      "title": "Strengthen critical-path integration validation",
+      "priority": "NOW",
+      "impact": 9,
+      "effort": "medium",
+      "definition_of_done": "Critical-path integration tests pass in CI and cover major failure modes."
+    }
+  ],
+  "limitations": [
+    "This is synthetic example data and does not represent a real project audit."
+  ],
+  "history": {}
+}
