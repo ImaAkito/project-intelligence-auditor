@@ -1,52 +1,78 @@
 # Project Intelligence Auditor
 
-Evidence-based Codex skill for technical, product, research, and commercial auditing of software projects with an immersive intelligence dashboard.
+Evidence-based Codex skill and audit toolkit for understanding the real state of a software, AI/ML, research, medical, hardware, or hybrid project.
 
-## What it does
+It combines model-assisted repository reasoning with deterministic evidence collectors, scoring, prioritization, snapshot comparison, and a self-contained interactive **Project Intelligence Command Center**.
 
-Project Intelligence Auditor turns a repository into a structured, evidence-backed project intelligence snapshot. It separates implementation from quality, readiness, and confidence; maps modules and dependencies; detects false completion; builds technical debt and risk registers; evaluates product and commercialization paths; and generates machine-readable audit data plus human-readable reports.
+## Why this exists
 
-The intended workflow is:
+A repository can look "80% done" while the critical workflow is untested, the UI is wired to mocks, deployment is missing, or the commercial path is undefined.
 
-1. scan the repository and collect objective evidence;
-2. infer the system map and critical path;
-3. classify evidence quality and confidence;
-4. calculate module and project scores using deterministic scoring rules;
-5. generate audit artifacts and roadmap recommendations;
-6. compare with previous snapshots when available;
-7. render or update an immersive Project Command Center.
+Project Intelligence Auditor keeps separate:
 
-## Core principles
+- **Completion** — how much capability exists.
+- **Confirmed completion** — how much is supported by strong evidence.
+- **Quality** — how well the existing implementation is engineered.
+- **Readiness** — whether target-state gates are satisfied.
+- **Confidence** — how reliable the audit itself is.
+- **Evidence strength** — why a claim should be believed.
 
-- Evidence before opinion.
-- Completion is not quality.
-- Quality is not readiness.
-- Readiness is not confidence.
-- Critical-path modules weigh more than decorative or optional features.
-- README claims do not count as implementation evidence unless code/tests/results support them.
-- Mocks, stubs, hardcoded outputs, empty tests, dead paths, and demo-only flows reduce confirmed completion.
-- Unverifiable conclusions must remain explicitly uncertain.
+The LLM is used for system understanding and contextual judgment. Aggregate completion scores are calculated by deterministic tooling from evidence-backed inputs.
+
+## Current capabilities
+
+The v0.2 toolchain includes:
+
+- repository inventory;
+- module-candidate discovery;
+- dependency declaration inventory;
+- test inventory and weak-test signals;
+- false-completion signal detection;
+- technical-debt signal collection;
+- Git history, churn, velocity, hotspot, and author-concentration signals;
+- evidence model E0–E4;
+- deterministic module/project scoring;
+- readiness-gate methodology;
+- deterministic recommendation leverage ranking;
+- audit snapshot schema validation;
+- snapshot comparison;
+- engineering, architecture, security, product, commercialization, research, ML, medical, and hardware audit references;
+- standalone interactive Project Command Center generation.
 
 ## Repository layout
 
 ```text
 SKILL.md
 references/
-  scoring-model.md
-  evidence-model.md
   architecture-audit.md
-  product-audit.md
   commercialization-audit.md
-  ml-audit.md
-  medical-audit.md
-  hardware-audit.md
   dashboard-spec.md
+  evidence-model.md
+  hardware-audit.md
+  medical-audit.md
+  ml-audit.md
+  product-audit.md
+  readiness-gates.md
+  research-audit.md
+  scoring-model.md
+  security-audit.md
 scripts/
-  scan_repository.py
-  detect_false_completion.py
+  audit_utils.py
+  analyze_git_history.py
+  bootstrap_audit.py
+  build_dashboard.py
   calculate_scores.py
+  collect_dependencies.py
+  collect_tests.py
   compare_snapshots.py
+  detect_false_completion.py
+  detect_technical_debt.py
+  discover_modules.py
+  plan_actions.py
+  run_collectors.py
+  scan_repository.py
   validate_audit.py
+  validate_skill.py
 schema/
   audit.schema.json
 templates/
@@ -55,36 +81,155 @@ templates/
   PROJECT_COMMERCIALIZATION.md
 examples/
   example-audit.json
+tests/
 ```
+
+## Quick start
+
+Make this folder available to Codex as the `project-intelligence-auditor` skill and ask:
+
+```text
+Use the Project Intelligence Auditor skill.
+
+Perform a full evidence-based audit of this repository. Run the deterministic
+collectors first, verify the critical path, execute safe validation checks,
+calculate deterministic scores, rank the highest-leverage work, preserve an
+audit snapshot, and build the Project Intelligence Command Center.
+
+Do not change product behavior unless I separately ask you to implement fixes.
+```
+
+The skill's `SKILL.md` contains the full operating workflow.
+
+## Deterministic collector suite
+
+From the target repository, with the auditor scripts available:
+
+```bash
+python scripts/run_collectors.py . -o .project-audit/discovery.json
+```
+
+The suite records evidence candidates in one discovery artifact.
+
+It intentionally does **not** calculate completion from file counts, TODO counts, or Git activity.
+
+Create an unscored audit skeleton:
+
+```bash
+python scripts/bootstrap_audit.py .project-audit/discovery.json \
+  -o .project-audit/audit.json
+```
+
+Codex then reviews the repository in context, turns verified findings into evidence, defines the real modules and critical path, and fills the scoring inputs.
+
+## Scoring
+
+After module inputs have been evidence-backed:
+
+```bash
+python scripts/calculate_scores.py .project-audit/audit.json
+```
+
+Then rank recommendations:
+
+```bash
+python scripts/plan_actions.py .project-audit/audit.json
+```
+
+Validate the snapshot:
+
+```bash
+python scripts/validate_audit.py .project-audit/audit.json
+```
+
+## Project Intelligence Command Center
+
+Generate a standalone interactive dashboard:
+
+```bash
+python scripts/build_dashboard.py .project-audit/audit.json \
+  -o .project-audit/PROJECT_COMMAND_CENTER.html
+```
+
+Open the resulting HTML file in a browser.
+
+The dashboard includes:
+
+- executive readiness scores;
+- bottleneck view;
+- module health map;
+- module drill-down;
+- dependency graph;
+- risk matrix;
+- highest-leverage actions;
+- commercialization view;
+- development directions;
+- evidence explorer.
+
+It embeds the audit snapshot at generation time and has no runtime web dependency.
 
 ## Audit outputs
 
-A target project should receive a `.project-audit/` directory containing at least:
+A fully audited target project should contain:
 
 ```text
 .project-audit/
+  discovery.json
   audit.json
+  PROJECT_COMMAND_CENTER.html
   history/
 PROJECT_AUDIT.md
 PROJECT_ROADMAP.md
 PROJECT_COMMERCIALIZATION.md
 ```
 
-The dashboard should use `audit.json` as its source of truth instead of duplicating hand-maintained values in UI code.
+`audit.json` is the canonical machine-readable source of truth for the dashboard and derived reports.
 
-## Quick start with Codex
+## Historical comparison
 
-Install this repository as a Codex skill or make it available to Codex, then run a task such as:
+Keep previous snapshots under `.project-audit/history/`, then compare:
 
-```text
-Run the Project Intelligence Auditor on this repository. Perform a full evidence-based audit, execute safe validation checks, generate a new audit snapshot, compare it with previous snapshots if present, and build or update the immersive Project Command Center. Do not change product behavior except where minimal audit tooling is required.
+```bash
+python scripts/compare_snapshots.py OLD.json NEW.json
 ```
 
-For the full operating procedure, scoring rules, domain-specific audits, and dashboard contract, see `SKILL.md` and `references/`.
+Use historical changes to detect progress, new risks, closed risks, regressions, and readiness movement. Activity itself is not treated as progress.
+
+## Development
+
+Install development dependencies:
+
+```bash
+python -m pip install -e '.[dev]'
+```
+
+Run:
+
+```bash
+python scripts/validate_skill.py SKILL.md
+python -m compileall scripts tests
+ruff check scripts tests
+pytest
+python scripts/validate_audit.py examples/example-audit.json
+python scripts/build_dashboard.py examples/example-audit.json -o /tmp/project-command-center.html
+```
+
+## Design principles
+
+- Evidence before opinion.
+- Unknown is different from zero.
+- Completion is different from quality.
+- Readiness is gate-based.
+- Critical-path gaps matter more than decorative gaps.
+- README claims are not implementation proof.
+- Heuristic scanner matches are not automatic defects.
+- A passing unit test is not automatically end-to-end readiness.
+- Commercial potential is evaluated separately from technical sophistication.
+- Every important score should be explainable through evidence.
 
 ## Status
 
-This repository currently contains the first public implementation of the audit methodology and deterministic helper scripts. The skill is designed to evolve through repeated use on real repositories.
+v0.2 is a usable foundation for real repository audits. The next development layers are deeper dependency/architecture inference, richer historical forecasting, browser-based dashboard validation, ecosystem-specific static-analysis adapters, and evaluation against real audit fixtures.
 
 ## License
 

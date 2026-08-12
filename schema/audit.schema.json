@@ -12,7 +12,8 @@
         "generated_at": {"type": "string"},
         "auditor_version": {"type": "string"},
         "repository": {"type": ["string", "null"]},
-        "commit": {"type": ["string", "null"]}
+        "commit": {"type": ["string", "null"]},
+        "snapshot_kind": {"type": ["string", "null"]}
       },
       "additionalProperties": true
     },
@@ -24,47 +25,52 @@
         "mission": {"type": ["string", "null"]},
         "target_users": {"type": "array", "items": {"type": "string"}},
         "current_stage": {"type": ["string", "null"]},
-        "trl": {"type": ["integer", "null"], "minimum": 1, "maximum": 9}
+        "trl": {"type": ["integer", "null"], "minimum": 1, "maximum": 9},
+        "scope_status": {"type": ["string", "null"]}
       },
       "additionalProperties": true
     },
     "scores": {
       "type": "object",
-      "properties": {
-        "confirmed_completion": {"$ref": "#/$defs/scoreOrNull"},
-        "estimated_completion": {"$ref": "#/$defs/scoreOrNull"},
-        "project_health": {"$ref": "#/$defs/scoreOrNull"},
-        "prototype_readiness": {"$ref": "#/$defs/scoreOrNull"},
-        "mvp_readiness": {"$ref": "#/$defs/scoreOrNull"},
-        "commercial_readiness": {"$ref": "#/$defs/scoreOrNull"},
-        "production_readiness": {"$ref": "#/$defs/scoreOrNull"},
-        "scale_readiness": {"$ref": "#/$defs/scoreOrNull"},
-        "research_readiness": {"$ref": "#/$defs/scoreOrNull"},
-        "confidence": {"$ref": "#/$defs/scoreOrNull"}
-      },
+      "properties": {},
       "additionalProperties": {"$ref": "#/$defs/scoreOrNull"}
     },
-    "modules": {
+    "modules": {"type": "array", "items": {"$ref": "#/$defs/module"}},
+    "dependency_edges": {
       "type": "array",
-      "items": {"$ref": "#/$defs/module"}
+      "items": {
+        "type": "object",
+        "required": ["from", "to"],
+        "properties": {
+          "from": {"type": "string"},
+          "to": {"type": "string"},
+          "kind": {"type": ["string", "null"]},
+          "confidence": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+          "evidence_ids": {"type": "array", "items": {"type": "string"}}
+        },
+        "additionalProperties": true
+      }
     },
-    "evidence": {
+    "evidence": {"type": "array", "items": {"$ref": "#/$defs/evidence"}},
+    "validation_runs": {
       "type": "array",
-      "items": {"$ref": "#/$defs/evidence"}
+      "items": {
+        "type": "object",
+        "required": ["id", "status"],
+        "properties": {
+          "id": {"type": "string"},
+          "action": {"type": ["string", "null"]},
+          "command": {"type": ["string", "null"]},
+          "status": {"type": "string", "enum": ["tested_pass", "tested_fail", "unable_to_test", "not_applicable"]},
+          "summary": {"type": ["string", "null"]},
+          "evidence_ids": {"type": "array", "items": {"type": "string"}}
+        },
+        "additionalProperties": true
+      }
     },
-    "risks": {
-      "type": "array",
-      "items": {"$ref": "#/$defs/risk"}
-    },
-    "technical_debt": {
-      "type": "array",
-      "items": {"type": "object", "additionalProperties": true}
-    },
-    "directions": {
-      "type": "array",
-      "items": {"type": "object", "additionalProperties": true}
-    },
-    "recommendations": {
+    "risks": {"type": "array", "items": {"$ref": "#/$defs/risk"}},
+    "technical_debt": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
+    "bottlenecks": {
       "type": "array",
       "items": {
         "type": "object",
@@ -72,40 +78,35 @@
         "properties": {
           "id": {"type": "string"},
           "title": {"type": "string"},
-          "priority": {"type": ["string", "null"]},
-          "impact": {"type": ["number", "null"]},
-          "effort": {"type": ["string", "number", "null"]},
-          "definition_of_done": {"type": ["string", "null"]}
+          "description": {"type": ["string", "null"]},
+          "why": {"type": ["string", "null"]},
+          "severity": {"type": ["string", "null"]},
+          "evidence_ids": {"type": "array", "items": {"type": "string"}}
         },
         "additionalProperties": true
       }
     },
-    "limitations": {
-      "type": "array",
-      "items": {"type": "string"}
-    },
-    "history": {
-      "type": "object",
-      "additionalProperties": true
-    }
+    "directions": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
+    "commercialization": {"type": "object", "additionalProperties": true},
+    "readiness_gates": {"type": "object", "additionalProperties": true},
+    "recommendations": {"type": "array", "items": {"$ref": "#/$defs/recommendation"}},
+    "action_plan": {"type": "object", "additionalProperties": true},
+    "limitations": {"type": "array", "items": {"type": "string"}},
+    "history": {"type": "object", "additionalProperties": true}
   },
   "additionalProperties": true,
   "$defs": {
-    "scoreOrNull": {
-      "type": ["number", "null"],
-      "minimum": 0,
-      "maximum": 100
-    },
+    "scoreOrNull": {"type": ["number", "null"], "minimum": 0, "maximum": 100},
     "module": {
       "type": "object",
       "required": ["id", "name"],
       "properties": {
         "id": {"type": "string"},
         "name": {"type": "string"},
-        "classification": {
-          "type": "string",
-          "enum": ["critical_path", "important", "optional", "experimental", "legacy", "dead", "unknown"]
-        },
+        "path": {"type": ["string", "null"]},
+        "role_hint": {"type": ["string", "null"]},
+        "responsibility": {"type": ["string", "null"]},
+        "classification": {"type": "string", "enum": ["critical_path", "important", "optional", "experimental", "legacy", "dead", "unknown"]},
         "implementation": {"$ref": "#/$defs/scoreOrNull"},
         "integration": {"$ref": "#/$defs/scoreOrNull"},
         "validation": {"$ref": "#/$defs/scoreOrNull"},
@@ -118,7 +119,9 @@
         "criticality": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
         "evidence_level": {"type": "string", "enum": ["E0", "E1", "E2", "E3", "E4"]},
         "dependencies": {"type": "array", "items": {"type": "string"}},
-        "evidence_ids": {"type": "array", "items": {"type": "string"}}
+        "consumers": {"type": "array", "items": {"type": "string"}},
+        "evidence_ids": {"type": "array", "items": {"type": "string"}},
+        "status": {"type": ["string", "null"]}
       },
       "additionalProperties": true
     },
@@ -132,7 +135,8 @@
         "kind": {"type": ["string", "null"]},
         "source": {"type": ["string", "null"]},
         "location": {"type": ["string", "null"]},
-        "confidence": {"type": ["number", "null"], "minimum": 0, "maximum": 1}
+        "confidence": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "verified_at": {"type": ["string", "null"]}
       },
       "additionalProperties": true
     },
@@ -144,9 +148,31 @@
         "title": {"type": "string"},
         "probability": {"type": "integer", "minimum": 1, "maximum": 5},
         "impact": {"type": "integer", "minimum": 1, "maximum": 5},
-        "score": {"type": ["integer", "null"], "minimum": 1, "maximum": 25},
+        "score": {"type": ["integer", "number", "null"], "minimum": 1, "maximum": 25},
         "category": {"type": ["string", "null"]},
-        "mitigation": {"type": ["string", "null"]}
+        "mitigation": {"type": ["string", "null"]},
+        "evidence_ids": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": true
+    },
+    "recommendation": {
+      "type": "object",
+      "required": ["id", "title"],
+      "properties": {
+        "id": {"type": "string"},
+        "title": {"type": "string"},
+        "priority": {"type": ["string", "null"]},
+        "phase": {"type": ["string", "null"]},
+        "impact": {"type": ["number", "null"], "minimum": 0, "maximum": 100},
+        "risk_reduction": {"type": ["number", "null"], "minimum": 0, "maximum": 100},
+        "effort": {"type": ["string", "number", "null"]},
+        "confidence": {"type": ["number", "null"], "minimum": 0, "maximum": 100},
+        "critical_path": {"type": ["boolean", "null"]},
+        "unlocks": {"type": "array", "items": {"type": "string"}},
+        "leverage_score": {"type": ["number", "null"], "minimum": 0},
+        "definition_of_done": {"type": ["string", "null"]},
+        "evidence_required": {"type": ["string", "array", "null"]},
+        "why": {"type": ["string", "null"]}
       },
       "additionalProperties": true
     }

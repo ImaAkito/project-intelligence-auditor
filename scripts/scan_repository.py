@@ -5,29 +5,22 @@ import argparse
 import json
 from collections import Counter
 from pathlib import Path
-from typing import Iterable
+from typing import Any
 
-IGNORED_DIRS = {
-    ".git", ".hg", ".svn", "node_modules", ".venv", "venv", "env", "dist", "build",
-    "coverage", "htmlcov", ".next", ".cache", ".pytest_cache", ".mypy_cache", ".ruff_cache"
-}
+from audit_utils import iter_files, relative_posix, resolve_root, write_json
 
 MANIFEST_NAMES = {
     "pyproject.toml", "requirements.txt", "package.json", "package-lock.json", "pnpm-lock.yaml",
-    "yarn.lock", "Cargo.toml", "go.mod", "pom.xml", "build.gradle", "build.gradle.kts",
-    "Dockerfile", "docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml"
+    "yarn.lock", "Cargo.toml", "Cargo.lock", "go.mod", "go.sum", "pom.xml", "build.gradle",
+    "build.gradle.kts", "Dockerfile", "docker-compose.yml", "docker-compose.yaml", "compose.yml",
+    "compose.yaml", "Makefile", "CMakeLists.txt",
 }
 
+SOURCE_EXTENSIONS = {
+    ".py", ".js", ".jsx", ".ts", ".tsx", ".java", ".kt", ".go", ".rs", ".c", ".cpp",
+    ".cc", ".h", ".hpp", ".cs", ".php", ".rb", ".swift", ".scala", ".vue", ".svelte",
+}
 TEST_MARKERS = ("test_", "_test.", ".spec.", ".test.")
-
-
-def iter_files(root: Path) -> Iterable[Path]:
-    for path in root.rglob("*"):
-        if not path.is_file():
-            continue
-        if any(part in IGNORED_DIRS for part in path.parts):
-            continue
-        yield path
 
 
 def classify(path: Path) -> str:
@@ -41,16 +34,42 @@ def classify(path: Path) -> str:
         return "test"
     if name.startswith("readme") or path.suffix.lower() in {".md", ".rst"}:
         return "documentation"
-    if path.suffix.lower() in {".ipynb"}:
+    if path.suffix.lower() == ".ipynb":
         return "notebook"
     if path.suffix.lower() in {".yaml", ".yml", ".toml", ".ini", ".cfg", ".json"}:
         return "configuration"
-    if path.suffix.lower() in {
-        ".py", ".js", ".jsx", ".ts", ".tsx", ".java", ".kt", ".go", ".rs", ".c", ".cpp",
-        ".cc", ".h", ".hpp", ".cs", ".php", ".rb", ".swift", ".scala", ".vue", ".svelte"
-    }:
+    if path.suffix.lower() in SOURCE_EXTENSIONS:
         return "source"
     return "other"
+
+
+def scan(root: Path | str) -> dict[str, Any]:
+    root_path = resolve_root(root)
+    files = list(iter_files(root_path, max_bytes=None))
+    by_extension = Counter(path.suffix.lower() or "<none>" for path in files)
+    by_kind = Counter(classify(path.relative_to(root_path)) for path in files)
+    top_level = sorted(
+        path.name for path in root_path.iterdir() if path.name not in {".git", ".project-audit"}
+    )
+    return {
+        "collector": "scan_repository",
+        "root": str(root_path), "file_count": len(files), "top_level": top_level,
+        "by_kind": dict(sorted(by_kind.items())),
+        "by_extension": dict(sorted(by_extension.items(), key=lambda item: (-item[1], item[0]))),
+        "manifests": sorted(relative_posix(path, root_path) for path in files if path.name in MANIFEST_NAMES),
+        "tests": sorted(
+            relative_posix(path, root_path) for path in files
+            if classify(path.relative_to(root_path)) == "test"
+        ),
+        "documentation": sorted(
+            relative_posix(path, root_path) for path in files
+            if classify(path.relative_to(root_path)) == "documentation"
+        ),
+        "ci": sorted(
+            relative_posix(path, root_path) for path in files
+            if classify(path.relative_to(root_path)) == "ci"
+        ),
+    }
 
 
 def main() -> int:
@@ -58,36 +77,12 @@ def main() -> int:
     parser.add_argument("root", nargs="?", default=".", type=Path)
     parser.add_argument("-o", "--output", type=Path)
     args = parser.parse_args()
-
-    root = args.root.resolve()
-    files = list(iter_files(root))
-    by_extension = Counter(path.suffix.lower() or "<none>" for path in files)
-    by_kind = Counter(classify(path.relative_to(root)) for path in files)
-
-    top_level = sorted(
-        path.name for path in root.iterdir()
-        if path.name not in IGNORED_DIRS
-    )
-
-    payload = {
-        "root": str(root),
-        "file_count": len(files),
-        "top_level": top_level,
-        "by_kind": dict(sorted(by_kind.items())),
-        "by_extension": dict(sorted(by_extension.items(), key=lambda item: (-item[1], item[0]))),
-        "manifests": sorted(path.relative_to(root).as_posix() for path in files if path.name in MANIFEST_NAMES),
-        "tests": sorted(path.relative_to(root).as_posix() for path in files if classify(path.relative_to(root)) == "test"),
-        "documentation": sorted(path.relative_to(root).as_posix() for path in files if classify(path.relative_to(root)) == "documentation"),
-        "ci": sorted(path.relative_to(root).as_posix() for path in files if classify(path.relative_to(root)) == "ci"),
-    }
-
-    rendered = json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
+    payload = scan(args.root)
     if args.output:
-        args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(rendered, encoding="utf-8")
+        write_json(args.output, payload)
         print(f"Wrote repository inventory to {args.output}")
     else:
-        print(rendered, end="")
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
     return 0
 
 

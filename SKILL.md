@@ -1,22 +1,48 @@
+---
+name: project-intelligence-auditor
+description: Evidence-based technical, product, research, and commercial audit of a repository with deterministic scoring, risk and roadmap analysis, history tracking, and an interactive Project Command Center.
+---
+
 # Project Intelligence Auditor
 
-## Purpose
+Use this skill when the user wants to know the actual state of a project: what exists, what works, what is missing, how good the implementation is, how close it is to prototype/MVP/production/commercial readiness, which direction is strongest, and what work has the highest leverage.
 
-Perform a repository-wide, evidence-based audit of a software, AI/ML, research, medical, hardware, embedded, robotics, or hybrid project. Produce objective project intelligence rather than a narrative code review.
+The output is project intelligence, not a narrative code review.
 
-The audit must distinguish:
+## Core invariants
 
-- completion;
-- quality;
-- readiness;
-- confidence;
-- evidence strength.
+Keep these concepts separate:
 
-Never invent precision. If evidence is weak, lower confidence or mark the metric unknown.
+- **Completion** — how much of the intended capability exists.
+- **Confirmed completion** — how much completion is supported by strong evidence.
+- **Quality** — how well the existing implementation is engineered.
+- **Readiness** — whether the system satisfies the gates for a target state such as MVP or production.
+- **Confidence** — how reliable the audit itself is.
+- **Evidence strength** — how strongly a specific claim is supported.
 
-## Operating modes
+Do not manufacture precision. Unknown values stay unknown. Missing evidence lowers confidence rather than silently becoming zero.
 
-Use all applicable modes:
+Do not infer readiness from code volume, commit count, number of files, UI polish, README claims, or a passing happy-path demo alone.
+
+## Evidence model
+
+Read `references/evidence-model.md` before scoring.
+
+Use:
+
+- **E0** — no evidence.
+- **E1** — intent-only evidence: roadmap, issue, TODO, comment, design note, README claim.
+- **E2** — implementation exists but behavior is not verified.
+- **E3** — behavior is demonstrated by a reproducible test, execution, benchmark, trace, or validated output.
+- **E4** — multiple independent strong sources corroborate the behavior.
+
+README claims alone cannot exceed E1 unless corroborated.
+
+Every material score or conclusion should be traceable to evidence IDs or explicit limitations.
+
+## Audit perspectives
+
+Apply all perspectives that are relevant:
 
 - Engineering
 - Architecture
@@ -27,186 +53,366 @@ Use all applicable modes:
 - Commercial / Due Diligence
 - Research
 - AI / ML
-- Medical
+- Medical / Healthcare
 - Hardware / Embedded / Robotics
 
-## Required workflow
+Do not force a domain perspective that does not apply.
 
-### 1. Discover project intent
+## Execution workflow
 
-Inspect repository structure, README files, AGENTS.md, manifests, configuration, CI/CD, source code, tests, examples, notebooks, scripts, deployment files, TODO/FIXME/HACK markers, mocks, stubs, feature flags, disabled code, generated outputs, and Git history when available.
+### Phase 0 — Establish scope and safety
 
-Recover:
+Read repository-level instructions such as `AGENTS.md` first.
+
+Identify:
+
+- repository root;
+- current branch and commit when available;
+- whether this is a monorepo;
+- whether generated/vendor directories exist;
+- whether the project can be executed safely;
+- whether credentials, production services, hardware, paid APIs, or destructive migrations might be involved.
+
+Do not expose secrets in reports. Do not use production credentials. Do not mutate production data. Do not publish or deploy unless the user separately requests it.
+
+### Phase 1 — Run deterministic discovery
+
+When Python is available, run the collector suite before deep model-assisted conclusions:
+
+```bash
+python scripts/run_collectors.py . -o .project-audit/discovery.json
+```
+
+This collects repository inventory, module candidates, dependency declarations, test signals, false-completion candidates, technical-debt candidates, and Git-history signals.
+
+Collector results are **evidence candidates**, not automatic defects or final architectural truth.
+
+If a collector fails, continue the audit using the remaining evidence and record the failure under limitations.
+
+When starting a new audit snapshot, optionally bootstrap the JSON skeleton:
+
+```bash
+python scripts/bootstrap_audit.py .project-audit/discovery.json \
+  -o .project-audit/audit.json
+```
+
+The bootstrap intentionally leaves scores null.
+
+### Phase 2 — Recover project intent
+
+Inspect source code and documentation, not only README.
+
+Recover and distinguish:
 
 - project mission;
 - target users;
-- core workflow;
-- expected output;
-- current demonstrated output;
-- inferred intended end state.
+- primary problem;
+- core user workflow;
+- expected outputs;
+- currently demonstrated outputs;
+- inferred intended end state;
+- declared MVP scope when present;
+- inferred requirements needed for a coherent product.
 
 Mark inferred requirements explicitly.
 
-### 2. Build the system map
+If official scope is ambiguous, do not pretend it is known. Record competing interpretations if they materially change the audit.
 
-Model the repository as:
+### Phase 3 — Build the actual system map
+
+Model the project as:
 
 Project → Subsystem → Module → Component.
 
-Do not equate directory boundaries with architectural boundaries.
+Directory names are only discovery hints. Merge or split module candidates according to responsibility and dependency boundaries.
 
-For every module record:
+For each module record at least:
 
+- id and name;
 - responsibility;
-- dependencies;
-- consumers;
+- path(s);
+- dependencies and consumers;
+- classification;
 - criticality;
-- implementation state;
-- validation state;
+- implementation;
+- integration;
+- validation;
+- documentation;
+- operational readiness;
 - quality;
+- confidence;
+- evidence level;
+- evidence IDs;
 - risks;
-- blockers;
-- evidence references.
+- blockers.
 
-Classify every major element as one of:
+Classify major modules as:
 
-- critical_path;
-- important;
-- optional;
-- experimental;
-- legacy;
-- dead;
-- unknown.
+- `critical_path`
+- `important`
+- `optional`
+- `experimental`
+- `legacy`
+- `dead`
+- `unknown`
 
-### 3. Collect evidence
+Build `dependency_edges` when dependencies can be established.
 
-Use the evidence model in `references/evidence-model.md`.
+Identify the **critical path** for the primary user outcome. Missing critical-path capability must influence readiness more strongly than optional polish.
 
-Evidence levels:
+### Phase 4 — Detect false completion
 
-- E0: no evidence;
-- E1: intent-only evidence such as TODO, roadmap, comment, issue;
-- E2: implementation exists but is unverified;
-- E3: implementation is demonstrated by a reproducible execution, test, benchmark, or verified result;
-- E4: implementation is independently corroborated by multiple strong sources.
+Use deterministic signals from `scripts/detect_false_completion.py` and inspect the surrounding code before confirming a finding.
 
-README claims alone cannot exceed E1 unless corroborated.
+Look for semantic incompleteness such as:
 
-### 4. Detect false completion
-
-Search for:
-
-- stubs;
-- mocks;
-- placeholder returns;
-- hardcoded success states;
-- empty tests;
-- tests without meaningful assertions;
-- disabled validation;
+- stubs and placeholders;
+- mocked production paths;
+- hardcoded success or outputs;
+- UI without backend integration;
+- API surfaces without meaningful behavior;
+- tests that execute but assert nothing important;
+- disabled validation or authentication;
 - silent exception suppression;
-- demo-only code paths;
-- frontend without backend integration;
-- API surface without functional implementation;
-- unused alternative implementations;
+- demo-only paths presented as product capability;
+- unused implementations;
 - TODOs hidden behind completed-looking UI;
+- schema/migration drift;
 - training/inference preprocessing drift;
-- schema or migration drift.
+- configuration options that are not wired into execution;
+- documentation that describes removed or unfinished behavior.
 
-Use `scripts/detect_false_completion.py` as an objective signal collector. Treat its output as evidence candidates, not final truth.
+A heuristic match is not itself a defect. Confirm context first.
 
-### 5. Validate safely
+### Phase 5 — Validate behavior safely
 
-When feasible, run existing project checks:
+Run existing project checks when feasible:
 
-- tests;
+- unit tests;
+- integration tests;
+- end-to-end tests;
 - lint;
 - formatting checks;
 - type checking;
 - builds;
-- dependency audits;
 - smoke tests;
+- dependency/security audits already configured in the project;
 - sample inference;
-- benchmark scripts.
+- benchmark scripts;
+- reproducibility scripts.
 
-Do not run destructive operations, mutate production data, publish artifacts, expose secrets, or use production credentials.
+Record each run in `validation_runs` with:
 
-For each validation classify the result as:
+- command or action;
+- status: `tested_pass`, `tested_fail`, `unable_to_test`, or `not_applicable`;
+- relevant output summary;
+- environment constraints;
+- evidence IDs.
 
-- tested_pass;
-- tested_fail;
-- unable_to_test;
-- not_applicable.
+A passing build does not prove the product workflow works.
 
-### 6. Score modules
+### Phase 6 — Audit architecture, debt, dependencies, and maintainability
 
-Use the deterministic scoring model in `references/scoring-model.md` and `scripts/calculate_scores.py`.
+Read:
 
-Never let an LLM directly invent the final aggregate score.
+- `references/architecture-audit.md`
+- `references/security-audit.md`
+- `references/readiness-gates.md`
 
-For each module produce at least:
+Use `scripts/detect_technical_debt.py` as a signal collector.
+
+Assess:
+
+- boundaries and cohesion;
+- coupling and cycles;
+- state ownership;
+- duplicate logic;
+- god modules;
+- single points of failure;
+- hidden state;
+- premature and missing abstractions;
+- scalability bottlenecks;
+- error handling;
+- observability;
+- configuration;
+- dependency concentration;
+- dependency/version drift;
+- reproducibility;
+- onboarding readiness;
+- bus-factor signals;
+- documentation drift.
+
+Create a technical-debt register. Do not convert every TODO into debt automatically.
+
+### Phase 7 — Apply domain-specific reviews
+
+If AI/ML is material, read `references/ml-audit.md`.
+
+If medical/healthcare is material, read `references/medical-audit.md`.
+
+If hardware/embedded/robotics is material, read `references/hardware-audit.md`.
+
+If the project is research-driven, read `references/research-audit.md`.
+
+Keep domain readiness separate from general software completion.
+
+Examples:
+
+- working inference ≠ production ML readiness;
+- good internal validation ≠ clinical readiness;
+- a PCB layout ≠ manufacturable hardware;
+- promising experiment ≠ publication readiness.
+
+### Phase 8 — Score modules deterministically
+
+Read `references/scoring-model.md`.
+
+For every scored module, fill evidence-backed input dimensions before calculating aggregates:
 
 - implementation;
 - integration;
 - validation;
 - documentation;
 - operational_readiness;
-- completion;
 - quality;
-- criticality;
 - confidence;
-- evidence_level.
+- evidence_level;
+- classification / criticality;
+- dependency factor when justified;
+- user-value factor when justified.
 
-### 7. Score the project
+Then run:
 
-Produce at least:
+```bash
+python scripts/calculate_scores.py .project-audit/audit.json
+```
 
-- confirmed_completion;
-- estimated_completion;
-- project_health;
-- prototype_readiness;
-- mvp_readiness;
-- commercial_readiness;
-- production_readiness;
-- scale_readiness;
-- confidence.
+Do not manually overwrite deterministic aggregate values merely to make them "look right." If the result is misleading, correct the underlying module inputs or scoring model assumptions and document why.
 
-Where applicable also produce:
+### Phase 9 — Evaluate readiness gates
 
-- research_readiness;
-- publication_readiness;
-- ml_production_readiness;
-- clinical_readiness;
-- hardware_readiness;
-- system_integration_readiness;
-- TRL 1–9.
+Evaluate applicable states independently:
 
-### 8. Audit architecture and technical debt
+- Prototype Ready
+- MVP Ready
+- Commercial Ready
+- Production Ready
+- Scale Ready
 
-Identify:
+Where relevant also evaluate:
 
-- bottlenecks;
-- cyclic dependencies;
-- excessive coupling;
-- god modules;
-- hidden state;
-- duplicate logic;
-- weak boundaries;
-- single points of failure;
-- premature abstractions;
-- missing abstractions;
-- scalability limits;
-- dependency concentration;
-- documentation drift;
-- reproducibility gaps;
-- onboarding risk.
+- Research Readiness
+- Publication Readiness
+- ML Production Readiness
+- Clinical Readiness
+- Hardware Readiness
+- System Integration Readiness
+- Technology Readiness Level (TRL 1–9)
 
-Create a technical debt register with severity, impact, effort, dependencies, and timing.
+A readiness score should reflect gate satisfaction, not simply mirror completion.
 
-### 9. Audit risks
+For every target state list:
 
-Create a risk register using:
+- satisfied gates;
+- unsatisfied gates;
+- unknown gates;
+- blockers;
+- required evidence.
 
-Probability 1–5 × Impact 1–5.
+### Phase 10 — Product and commercialization audit
+
+Read:
+
+- `references/product-audit.md`
+- `references/commercialization-audit.md`
+
+Distinguish:
+
+Technology Readiness ≠ Product Readiness ≠ Market Readiness ≠ Commercial Readiness ≠ Operational Readiness.
+
+Analyze:
+
+- problem severity;
+- target user and ICP clarity;
+- value proposition;
+- workflow fit;
+- differentiation;
+- technical moat;
+- data moat;
+- workflow moat;
+- switching cost;
+- deployment complexity;
+- support burden;
+- pricing hypotheses;
+- cost structure;
+- time to first revenue;
+- regulatory/legal barriers;
+- IP potential;
+- scalability.
+
+If current market facts, competitors, prices, regulations, or standards are needed and fresh external research is unavailable, mark those claims unverified rather than relying on stale memory.
+
+Create explicit gap maps:
+
+- Technology → Product
+- Product → Commercial
+- Commercial → Scale
+
+### Phase 11 — Analyze alternative development directions
+
+Do not assume the current trajectory is optimal.
+
+Evaluate only plausible directions, for example:
+
+- research tool;
+- standalone application;
+- SaaS;
+- enterprise product;
+- API;
+- SDK;
+- platform;
+- open-source core + commercial layer;
+- hardware product;
+- medical device;
+- data product;
+- AI service;
+- white-label;
+- B2B / B2C / B2B2C.
+
+For each serious direction record:
+
+- technical fit;
+- reuse of existing work;
+- additional development;
+- differentiation;
+- defensibility;
+- commercial complexity;
+- time to MVP;
+- time to revenue;
+- risk;
+- strategic value;
+- direction score;
+- major unknowns.
+
+When useful, create contrasting scenarios such as fastest credible MVP, technically strongest product, and commercially strongest direction.
+
+### Phase 12 — Adversarial project review
+
+Ask:
+
+- What could kill this project technically?
+- What assumption is carrying the most unvalidated risk?
+- What appears complete but is not?
+- Which subsystem could invalidate the rest of the roadmap?
+- What is being overengineered?
+- What work should be stopped or deferred?
+- What would an external CTO, reviewer, customer, investor, regulator, or acquirer challenge first?
+
+Record concrete evidence and uncertainty.
+
+### Phase 13 — Build the risk register
+
+For each material risk use Probability 1–5 × Impact 1–5.
 
 Cover applicable categories:
 
@@ -227,193 +433,134 @@ Cover applicable categories:
 - vendor;
 - supply chain.
 
-### 10. Analyze product directions
+Record mitigation and evidence.
 
-Do not assume a single future trajectory.
+### Phase 14 — Prioritize highest-leverage work
 
-Evaluate applicable directions such as:
+Recommendations should include when applicable:
 
-- research tool;
-- standalone application;
-- SaaS;
-- API;
-- SDK;
-- enterprise product;
-- platform;
-- open-source core + commercial layer;
-- hardware product;
-- medical device;
-- data product;
-- AI service;
-- white-label;
-- B2B;
-- B2C;
-- B2B2C.
-
-For every serious direction estimate:
-
-- technical fit;
-- reuse of current work;
-- additional development;
-- differentiation;
-- defensibility;
-- commercial complexity;
-- risk;
-- time to MVP;
-- time to revenue;
-- strategic value.
-
-### 11. Commercial audit
-
-Use `references/commercialization-audit.md`.
-
-Distinguish:
-
-Technology Readiness ≠ Product Readiness ≠ Market Readiness ≠ Commercial Readiness ≠ Operational Readiness.
-
-Analyze:
-
-- problem severity;
-- ICP clarity;
-- value proposition;
-- differentiation;
-- technical/data/workflow moat;
-- deployment complexity;
-- support burden;
-- pricing hypotheses;
-- cost structure;
-- market accessibility;
-- regulatory barriers;
-- IP potential;
-- time to revenue;
-- scalability.
-
-Create explicit gap lists:
-
-- Technology → Product;
-- Product → Commercial;
-- Commercial → Scale.
-
-### 12. Domain-specific audit
-
-If AI/ML is present, read `references/ml-audit.md`.
-
-If medical/healthcare is present, read `references/medical-audit.md`.
-
-If hardware/embedded/robotics is present, read `references/hardware-audit.md`.
-
-If research is present, assess experimental validity, reproducibility, baselines, ablation, external validation, statistical design, novelty, and publication readiness.
-
-### 13. Prioritize work
-
-Build a roadmap using:
-
-- NOW;
-- NEXT;
-- LATER;
-- OPTIONAL;
-- DEFER;
-- REMOVE.
-
-For each action include:
-
-- priority;
-- impact;
+- impact 0–100;
 - effort;
-- risk reduction;
+- risk reduction 0–100;
+- critical-path status;
+- confidence;
 - dependencies;
 - unlocks;
 - definition of done;
-- evidence required for completion.
+- evidence required for completion;
+- rationale.
 
-Identify:
+Then run:
 
-- top 5 highest-leverage actions;
-- current project bottleneck;
-- best single two-week investment;
-- STOP DOING / DEFER items.
+```bash
+python scripts/plan_actions.py .project-audit/audit.json
+```
 
-### 14. Define the next version
+Use the result to create:
 
-Provide a concrete next-version scope with:
+- NOW
+- NEXT
+- LATER
+- OPTIONAL
+- DEFER
+- REMOVE
 
-- included work;
-- excluded work;
-- acceptance criteria;
-- quality gates;
-- measurable completion conditions.
+Identify top immediate actions, one highest-leverage action, best single two-week investment, and STOP DOING / DEFER items.
 
-### 15. Produce audit artifacts
+The deterministic leverage score is a prioritization aid, not a substitute for context.
 
-Create or update:
+### Phase 15 — Define the next version
 
-- `PROJECT_AUDIT.md`;
-- `PROJECT_ROADMAP.md`;
-- `PROJECT_COMMERCIALIZATION.md`;
-- `.project-audit/audit.json`;
-- `.project-audit/history/<timestamp>.json` when history is retained.
+Provide a concrete next-version scope with included work, excluded work, acceptance criteria, quality gates, and measurable completion conditions.
 
-Validate the JSON against `schema/audit.schema.json` or the project-adapted equivalent.
+Avoid a roadmap made of dozens of equal-priority tasks.
 
-### 16. Compare with history
+### Phase 16 — Save and compare snapshots
 
-If prior snapshots exist, calculate:
+Produce or update:
 
-- completion delta;
-- health delta;
-- readiness deltas;
-- closed risks;
-- new risks;
-- resolved blockers;
-- new blockers;
-- module progress;
-- regressions;
-- technical debt delta.
+- `PROJECT_AUDIT.md`
+- `PROJECT_ROADMAP.md`
+- `PROJECT_COMMERCIALIZATION.md`
+- `.project-audit/audit.json`
+- `.project-audit/history/<timestamp>.json` when history is retained
 
-Use `scripts/compare_snapshots.py`.
+If an older snapshot exists, run:
 
-### 17. Build or update the Project Command Center
+```bash
+python scripts/compare_snapshots.py OLD.json NEW.json
+```
 
-Follow `references/dashboard-spec.md`.
+Track completion delta, health delta, readiness deltas, module progress, new and closed risks, new and resolved blockers, technical-debt delta, and regressions.
 
-Prefer the target project's existing frontend stack. Do not add another frontend framework without a strong reason.
+Do not interpret velocity as positive merely because many files changed.
 
-The dashboard must read structured audit data rather than duplicate hardcoded scores.
+### Phase 17 — Validate the audit schema
 
-Required views:
+Run:
 
-- Executive overview;
-- Module intelligence;
-- Architecture / dependency map;
-- Development directions;
-- Roadmap;
-- Risk matrix;
-- Commercialization;
-- What Should I Do Now?;
-- Evidence Explorer;
-- historical changes when snapshots exist.
+```bash
+python scripts/validate_audit.py .project-audit/audit.json
+```
+
+Resolve schema errors before presenting the audit.
+
+### Phase 18 — Build the Project Command Center
+
+Read `references/dashboard-spec.md`.
+
+If the target project already has a suitable frontend stack, prefer integrating the dashboard there.
+
+If it does not, or a self-contained artifact is preferable, use the built-in static dashboard generator:
+
+```bash
+python scripts/build_dashboard.py .project-audit/audit.json \
+  -o .project-audit/PROJECT_COMMAND_CENTER.html
+```
+
+The dashboard must read structured audit data and expose evidence behind scores.
+
+Required information architecture:
+
+- Executive overview
+- Module intelligence
+- Architecture / dependency graph
+- Risk matrix
+- What Should I Do Now?
+- Development directions
+- Commercialization
+- Evidence Explorer
+- history/deltas when available
 
 Use progressive disclosure:
 
 Project → System → Module → Component → Finding → Evidence.
 
-### 18. Validate the dashboard
+Do not hardcode scores separately from the audit JSON.
 
-Run applicable build/lint/tests and, if browser tooling is available, inspect the rendered UI for:
+### Phase 19 — Validate the dashboard and artifacts
 
-- broken navigation;
-- console errors;
-- overflow;
-- poor responsive behavior;
-- inaccessible controls;
-- unreadable hierarchy;
-- misleading data representations.
+At minimum:
 
-Do not stop immediately after generating files.
+- confirm the audit JSON validates;
+- confirm the dashboard is generated;
+- inspect the resulting HTML or app build for obvious rendering issues;
+- run existing lint/build/tests for any dashboard code you changed;
+- use browser tooling when available to inspect navigation, responsiveness, console errors, and overflow.
 
-## Final response format
+Do not stop immediately after file generation.
 
-Keep the final chat response short. Report:
+## Required audit artifacts
+
+The canonical machine-readable source is `.project-audit/audit.json`.
+
+`PROJECT_AUDIT.md` should begin with a concise executive summary answering what the project is, where it is now, how complete it is, how strong the evidence is, what is working well, what is weak, what the main bottleneck is, what should happen next, and whether commercialization is plausible.
+
+Detailed claims must remain traceable to evidence.
+
+## Final response
+
+Keep the final chat response compact. Report:
 
 1. Project Completion.
 2. Project Health.
@@ -424,18 +571,20 @@ Keep the final chat response short. Report:
 7. Main bottleneck.
 8. Most promising direction.
 9. Next three actions.
-10. Audit/dashboard files created or updated.
-11. How to run the dashboard.
+10. Audit/dashboard artifacts created or updated.
+11. How to open or run the dashboard.
+12. Important limitations that materially affect confidence.
 
-Detailed reasoning belongs in the generated artifacts, not the final chat message.
+Detailed analysis belongs in the audit artifacts.
 
-## Safety and integrity constraints
+## Safety and integrity
 
-- Never expose discovered secrets in reports.
-- Never claim external validation that was not performed.
-- Never silently convert unknown values into zeros.
-- Never count code volume as completion.
-- Never count a UI mock as a working workflow.
-- Never count a test file as validation unless the tests are meaningful.
-- Never upgrade a README claim into implementation evidence without corroboration.
-- Never perform broad product refactoring during an audit unless explicitly requested.
+- Never reveal discovered secrets.
+- Never claim a validation, benchmark, clinical result, customer fact, market fact, or external test that was not actually verified.
+- Never silently convert unknown values into zero.
+- Never count source volume as completion.
+- Never count UI polish as workflow completion.
+- Never count a test file as meaningful validation merely because it exists.
+- Never upgrade README claims into implementation evidence without corroboration.
+- Never treat heuristic scanner findings as proven defects without contextual review.
+- Never perform broad refactoring of the audited product unless the user explicitly requests implementation work in addition to auditing.

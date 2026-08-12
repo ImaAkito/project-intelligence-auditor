@@ -1,14 +1,15 @@
 {
   "metadata": {
     "generated_at": "2026-08-13T00:00:00+03:00",
-    "auditor_version": "0.1.0",
+    "auditor_version": "0.2.0",
     "repository": "example/project",
-    "commit": "example"
+    "commit": "example",
+    "snapshot_kind": "synthetic-example"
   },
   "project": {
     "name": "Example Project",
-    "mission": "Demonstrate the Project Intelligence Auditor data contract.",
-    "target_users": ["developers"],
+    "mission": "Demonstrate the Project Intelligence Auditor data contract and dashboard.",
+    "target_users": ["developers", "technical leads"],
     "current_stage": "prototype",
     "trl": 4
   },
@@ -21,12 +22,15 @@
     "commercial_readiness": 38.0,
     "production_readiness": 44.0,
     "scale_readiness": 29.0,
+    "research_readiness": null,
     "confidence": 84.0
   },
   "modules": [
     {
       "id": "core",
       "name": "Core workflow",
+      "path": "src/core",
+      "responsibility": "Execute the primary user workflow.",
       "classification": "critical_path",
       "implementation": 80,
       "integration": 75,
@@ -39,7 +43,36 @@
       "confidence": 84,
       "criticality": 1.0,
       "evidence_level": "E3",
+      "dependencies": ["storage"],
+      "evidence_ids": ["ev-core-test"]
+    },
+    {
+      "id": "storage",
+      "name": "Storage",
+      "path": "src/storage",
+      "responsibility": "Persist project state.",
+      "classification": "important",
+      "implementation": 75,
+      "integration": 70,
+      "validation": 50,
+      "documentation": 60,
+      "operational_readiness": 40,
+      "completion": 63.75,
+      "confirmed_completion": 28.69,
+      "quality": 68,
+      "confidence": 70,
+      "criticality": 0.75,
+      "evidence_level": "E2",
       "dependencies": [],
+      "evidence_ids": ["ev-storage-code"]
+    }
+  ],
+  "dependency_edges": [
+    {
+      "from": "storage",
+      "to": "core",
+      "kind": "runtime",
+      "confidence": 0.9,
       "evidence_ids": ["ev-core-test"]
     }
   ],
@@ -47,11 +80,30 @@
     {
       "id": "ev-core-test",
       "level": "E3",
-      "claim": "The core workflow is exercised by a reproducible test.",
+      "claim": "The core workflow is exercised by a reproducible integration test.",
       "kind": "test_result",
       "source": "tests/test_core.py",
       "location": "test_core_workflow",
       "confidence": 0.9
+    },
+    {
+      "id": "ev-storage-code",
+      "level": "E2",
+      "claim": "Storage implementation exists but persistence recovery behavior has not been validated.",
+      "kind": "implementation",
+      "source": "src/storage",
+      "location": null,
+      "confidence": 0.8
+    }
+  ],
+  "validation_runs": [
+    {
+      "id": "validation-tests",
+      "action": "Run project tests",
+      "command": "pytest",
+      "status": "tested_pass",
+      "summary": "Core happy-path tests pass.",
+      "evidence_ids": ["ev-core-test"]
     }
   ],
   "risks": [
@@ -62,23 +114,94 @@
       "impact": 4,
       "score": 12,
       "category": "operational",
-      "mitigation": "Add integration failure tests and explicit recovery paths."
+      "mitigation": "Add integration failure tests and explicit recovery paths.",
+      "evidence_ids": ["ev-core-test"]
     }
   ],
   "technical_debt": [],
-  "directions": [],
-  "recommendations": [
+  "bottlenecks": [
     {
-      "id": "rec-integration-tests",
-      "title": "Strengthen critical-path integration validation",
-      "priority": "NOW",
-      "impact": 9,
-      "effort": "medium",
-      "definition_of_done": "Critical-path integration tests pass in CI and cover major failure modes."
+      "id": "bottleneck-failure-recovery",
+      "title": "Failure recovery is under-validated",
+      "why": "The happy path is demonstrated, but failure recovery lacks strong evidence.",
+      "severity": "high",
+      "evidence_ids": ["ev-core-test"]
     }
   ],
-  "limitations": [
-    "This is synthetic example data and does not represent a real project audit."
+  "directions": [
+    {
+      "name": "Developer tool",
+      "description": "Package the current workflow as a reusable developer-facing tool.",
+      "direction_score": 76,
+      "time_to_mvp": "short"
+    },
+    {
+      "name": "Enterprise platform",
+      "description": "Extend the workflow with governance, multi-user controls, and deployment tooling.",
+      "direction_score": 58,
+      "time_to_mvp": "medium"
+    }
   ],
-  "history": {}
+  "commercialization": {
+    "target_customer": "Technical teams with a repeated workflow matching the core capability",
+    "value_proposition": "Reduce repeated manual analysis and make project state evidence-driven.",
+    "technical_moat": "Workflow integration and audit history rather than a single algorithm.",
+    "data_moat": null,
+    "time_to_revenue": "unknown",
+    "primary_blocker": "No verified customer discovery in this synthetic example."
+  },
+  "readiness_gates": {
+    "mvp": {
+      "core_workflow": "pass",
+      "failure_handling": "fail",
+      "reproducible_setup": "unknown"
+    }
+  },
+  "recommendations": [
+    {
+      "id": "rec-customer-discovery",
+      "title": "Validate the first customer workflow",
+      "priority": "NEXT",
+      "impact": 75,
+      "risk_reduction": 60,
+      "effort": "small",
+      "confidence": 70,
+      "critical_path": false,
+      "unlocks": ["commercial readiness"],
+      "definition_of_done": "At least several relevant users validate the workflow problem and buying path.",
+      "why": "Commercial claims are currently unsupported.",
+      "leverage_score": 32.67,
+      "phase": "NOW"
+    },
+    {
+      "id": "rec-integration-tests",
+      "title": "Strengthen critical-path failure validation",
+      "priority": "NOW",
+      "impact": 90,
+      "risk_reduction": 85,
+      "effort": "medium",
+      "confidence": 90,
+      "critical_path": true,
+      "unlocks": ["MVP readiness", "production readiness"],
+      "definition_of_done": "Critical-path integration tests cover major failure and recovery modes.",
+      "why": "The largest evidence gap is failure behavior on the critical path.",
+      "leverage_score": 31.17,
+      "phase": "NOW"
+    }
+  ],
+  "limitations": ["This is synthetic example data and does not represent a real project audit."],
+  "history": {},
+  "action_plan": {
+    "top_actions": ["rec-customer-discovery", "rec-integration-tests"],
+    "highest_leverage_action": "rec-customer-discovery",
+    "phases": {
+      "NOW": ["rec-customer-discovery", "rec-integration-tests"],
+      "NEXT": [],
+      "LATER": [],
+      "OPTIONAL": [],
+      "DEFER": [],
+      "REMOVE": []
+    },
+    "method": "Deterministic leverage heuristic using impact, risk reduction, unlocks, critical-path status, confidence, and normalized effort."
+  }
 }
