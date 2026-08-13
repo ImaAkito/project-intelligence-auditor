@@ -1,0 +1,48 @@
+{
+  "id": "medical-validation-gap",
+  "notes": [
+    "Internal retrospective performance is not sufficient evidence for clinical readiness.",
+    "The auditor should identify missing external validation, calibration, subgroup/domain-shift analysis, and intended-use/regulatory evidence."
+  ],
+  "checks": [
+    {
+      "type": "item_text_contains",
+      "section": "risks",
+      "text": "external validation",
+      "critical": true,
+      "weight": 4
+    },
+    {
+      "type": "item_text_contains",
+      "section": "risks",
+      "text": "calibration",
+      "critical": true,
+      "weight": 3
+    },
+    {
+      "type": "readiness_state_in",
+      "gate": "clinical",
+      "allowed": ["not_ready", "blocked", "critical_evidence_missing", "insufficient_evidence"],
+      "critical": true,
+      "weight": 4
+    },
+    {
+      "type": "score_range",
+      "key": "clinical_readiness",
+      "max": 45,
+      "weight": 1
+    },
+    {
+      "type": "item_text_contains",
+      "section": "recommendations",
+      "text": "external",
+      "weight": 2
+    },
+    {
+      "type": "item_text_contains",
+      "section": "risks",
+      "text": "regulatory",
+      "weight": 1
+    }
+  ]
+}
