@@ -29,6 +29,21 @@ jobs:
       - name: Run tests
         run: pytest
 
+      - name: Run deterministic benchmark suite
+        run: |
+          python scripts/evaluate_benchmarks.py \
+            --manifest benchmarks/manifest.json \
+            --minimum-score 100 \
+            -o /tmp/pia-benchmark.json \
+            --markdown /tmp/pia-benchmark.md
+
+      - name: Check example audit integrity
+        run: |
+          python scripts/check_audit_integrity.py \
+            examples/example-audit.json \
+            --minimum-coverage 100 \
+            -o /tmp/audit-integrity.json
+
       - name: Validate example audit
         run: python scripts/validate_audit.py examples/example-audit.json
 
