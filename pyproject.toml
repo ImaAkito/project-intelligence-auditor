@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "project-intelligence-auditor"
-version = "0.3.0"
+version = "0.4.0"
 description = "Evidence-based Codex skill and tooling for technical, product, research, readiness, and commercial project auditing."
 requires-python = ">=3.10"
 license = "MIT"
