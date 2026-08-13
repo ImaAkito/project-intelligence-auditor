@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+
+      - name: Validate skill manifest
+        run: python scripts/validate_skill.py SKILL.md
+
+      - name: Compile scripts
+        run: python -m compileall scripts tests
+
+      - name: Run tests
+        run: pytest
+
+      - name: Validate example audit
+        run: python scripts/validate_audit.py examples/example-audit.json
+
+      - name: Smoke deterministic discovery
+        run: |
+          python scripts/infer_architecture.py . -o /tmp/architecture.json
+          python scripts/run_collectors.py . -o /tmp/discovery.json
+          python scripts/bootstrap_audit.py /tmp/discovery.json -o /tmp/bootstrap-audit.json
+
+      - name: Re-evaluate example readiness
+        run: python scripts/score_readiness.py examples/example-audit.json -o /tmp/scored-example.json
+
+      - name: Build example dashboard
+        run: python scripts/build_dashboard.py examples/example-audit.json -o /tmp/project-command-center.html
