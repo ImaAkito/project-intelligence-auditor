@@ -26,6 +26,9 @@ jobs:
       - name: Compile scripts
         run: python -m compileall scripts tests
 
+      - name: Ruff
+        run: ruff check scripts tests
+
       - name: Run tests
         run: pytest
 
@@ -42,6 +45,11 @@ jobs:
           python scripts/validate_challenge_corpus.py \
             --manifest challenges/manifest.json \
             -o /tmp/challenge-corpus.json
+          python scripts/prepare_challenge_tasks.py \
+            --output-dir /tmp/challenge-tasks \
+            --results-dir /tmp/challenge-results
+          test -s /tmp/challenge-tasks/ml-leakage.md
+          test -s /tmp/challenge-tasks/medical-validation-gap.md
 
       - name: Check example audit integrity
         run: |
@@ -61,10 +69,17 @@ jobs:
       - name: Validate example audit
         run: python scripts/validate_audit.py examples/example-audit.json
 
-      - name: Smoke deterministic discovery
+      - name: Smoke deterministic discovery and adaptive routing
         run: |
           python scripts/infer_architecture.py . -o /tmp/architecture.json
           python scripts/run_collectors.py . -o /tmp/discovery.json
+          test -s /tmp/audit-plan.json
+          test -s /tmp/AUDIT_PLAN.md
+          python scripts/detect_project_profile.py . -o /tmp/project-profile.json
+          python scripts/generate_audit_plan.py . \
+            --profile /tmp/project-profile.json \
+            -o /tmp/explicit-audit-plan.json \
+            --markdown /tmp/EXPLICIT_AUDIT_PLAN.md
           python scripts/bootstrap_audit.py /tmp/discovery.json -o /tmp/bootstrap-audit.json
 
       - name: Re-evaluate example readiness
