@@ -1,0 +1,47 @@
+{
+  "id": "commercial-evidence-gap",
+  "notes": [
+    "Technical competence is intentionally stronger than the available market evidence.",
+    "The auditor should not invent an ICP, pricing proof, or route to revenue."
+  ],
+  "checks": [
+    {
+      "type": "score_range",
+      "key": "commercial_readiness",
+      "max": 45,
+      "critical": true,
+      "weight": 4
+    },
+    {
+      "type": "readiness_state_in",
+      "gate": "commercial",
+      "allowed": ["not_ready", "blocked", "critical_evidence_missing", "insufficient_evidence"],
+      "critical": true,
+      "weight": 3
+    },
+    {
+      "type": "item_text_contains",
+      "section": "risks",
+      "text": "customer",
+      "weight": 2
+    },
+    {
+      "type": "item_text_contains",
+      "section": "recommendations",
+      "text": "customer",
+      "weight": 2
+    },
+    {
+      "type": "commercialization_field",
+      "key": "time_to_revenue",
+      "state": "empty",
+      "weight": 1
+    },
+    {
+      "type": "commercialization_field",
+      "key": "primary_blocker",
+      "state": "nonempty",
+      "weight": 1
+    }
+  ]
+}
