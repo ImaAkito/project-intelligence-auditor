@@ -1,0 +1,50 @@
+{
+  "version": "0.5.0",
+  "cases": [
+    {
+      "id": "polished-mock-app",
+      "domain": "software-product",
+      "weight": 1.0,
+      "fixture": "challenges/cases/polished-mock-app/fixture",
+      "golden": "challenges/cases/polished-mock-app/golden.json",
+      "focus": ["false_completion", "frontend_backend_integration", "mvp_readiness"],
+      "description": "A polished dashboard whose backend path still returns demo/hardcoded success data."
+    },
+    {
+      "id": "ml-leakage",
+      "domain": "machine-learning",
+      "weight": 1.2,
+      "fixture": "challenges/cases/ml-leakage/fixture",
+      "golden": "challenges/cases/ml-leakage/golden.json",
+      "focus": ["data_leakage", "patient_split", "ml_readiness"],
+      "description": "An ML project with preprocessing leakage and row-level splitting despite repeated patient IDs."
+    },
+    {
+      "id": "medical-validation-gap",
+      "domain": "medical-ai",
+      "weight": 1.3,
+      "fixture": "challenges/cases/medical-validation-gap/fixture",
+      "golden": "challenges/cases/medical-validation-gap/golden.json",
+      "focus": ["external_validation", "calibration", "clinical_readiness"],
+      "description": "A medical classifier with an internal AUC report but no external validation or clinical calibration evidence."
+    },
+    {
+      "id": "research-not-production",
+      "domain": "research-software",
+      "weight": 1.0,
+      "fixture": "challenges/cases/research-not-production/fixture",
+      "golden": "challenges/cases/research-not-production/golden.json",
+      "focus": ["research_readiness", "production_gap", "scope_interpretation"],
+      "description": "A reproducible research prototype that should score materially higher for research readiness than production readiness."
+    },
+    {
+      "id": "commercial-evidence-gap",
+      "domain": "developer-tool",
+      "weight": 1.0,
+      "fixture": "challenges/cases/commercial-evidence-gap/fixture",
+      "golden": "challenges/cases/commercial-evidence-gap/golden.json",
+      "focus": ["commercial_readiness", "customer_evidence", "technical_vs_market"],
+      "description": "A technically competent developer API with no validated customer, pricing, or route-to-revenue evidence."
+    }
+  ]
+}

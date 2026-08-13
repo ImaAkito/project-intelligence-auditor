@@ -1,0 +1,56 @@
+{
+  "version": "0.4.0",
+  "cases": [
+    {
+      "id": "layered-python",
+      "fixture": "benchmarks/fixtures/layered_python",
+      "description": "A small layered Python service with an API -> core -> storage dependency chain and a meaningful test.",
+      "checks": [
+        {"type": "module_candidate", "id": "api"},
+        {"type": "module_candidate", "id": "core"},
+        {"type": "module_candidate", "id": "storage"},
+        {"type": "architecture_edge", "from": "api", "to": "core"},
+        {"type": "architecture_edge", "from": "core", "to": "storage"},
+        {"type": "architecture_cycle", "members": ["api", "core", "storage"], "present": false},
+        {"type": "test_summary", "key": "detected_test_cases", "minimum": 1},
+        {"type": "test_summary", "key": "detected_assertions", "minimum": 1},
+        {"type": "finding_kind", "kind": "not_implemented", "minimum": 0, "maximum": 0}
+      ]
+    },
+    {
+      "id": "cyclic-python",
+      "fixture": "benchmarks/fixtures/cyclic_python",
+      "description": "Three Python modules with an intentional circular static-import dependency.",
+      "checks": [
+        {"type": "architecture_edge", "from": "alpha", "to": "beta"},
+        {"type": "architecture_edge", "from": "beta", "to": "gamma"},
+        {"type": "architecture_edge", "from": "gamma", "to": "alpha"},
+        {"type": "architecture_cycle", "members": ["alpha", "beta", "gamma"]}
+      ]
+    },
+    {
+      "id": "false-completion",
+      "fixture": "benchmarks/fixtures/false_completion",
+      "description": "A superficially complete project containing a hardcoded success response, an unimplemented path, a fake service marker, TODO debt, and an assertion-free test.",
+      "checks": [
+        {"type": "finding_kind", "kind": "hardcoded_success"},
+        {"type": "finding_kind", "kind": "not_implemented"},
+        {"type": "finding_kind", "kind": "mock_marker"},
+        {"type": "finding_kind", "kind": "todo"},
+        {"type": "test_signal", "signal": "tests_without_detected_assertions"},
+        {"type": "technical_debt_signal", "signal": "marker:todo"}
+      ]
+    },
+    {
+      "id": "js-monorepo",
+      "fixture": "benchmarks/fixtures/js_monorepo",
+      "description": "A small apps/packages JavaScript monorepo with a cross-container relative import and declared dependencies.",
+      "checks": [
+        {"type": "architecture_edge", "from": "apps-web", "to": "packages-shared"},
+        {"type": "dependency", "name": "zod"},
+        {"type": "dependency", "name": "typescript"},
+        {"type": "finding_kind", "kind": "not_implemented", "minimum": 0, "maximum": 0}
+      ]
+    }
+  ]
+}

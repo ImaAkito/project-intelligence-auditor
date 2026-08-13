@@ -1,0 +1,10 @@
+{
+  "name": "pia-benchmark-monorepo",
+  "private": true,
+  "dependencies": {
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0"
+  }
+}

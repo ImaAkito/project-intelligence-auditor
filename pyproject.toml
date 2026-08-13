@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "project-intelligence-auditor"
-version = "0.3.0"
-description = "Evidence-based Codex skill and tooling for technical, product, research, readiness, and commercial project auditing."
+version = "0.5.0"
+description = "Evidence-based Codex skill and tooling for technical, product, research, readiness, commercial, and semantic project auditing."
 requires-python = ">=3.10"
 license = "MIT"
 authors = [{name = "ImaAkito"}]
@@ -32,3 +32,8 @@ target-version = "py310"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
+ignore = [
+  "E501",
+  "I001",
+  "UP035"
+]

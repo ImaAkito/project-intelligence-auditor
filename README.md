@@ -1,25 +1,28 @@
 # Project Intelligence Auditor
 
-Evidence-based Codex skill for technical, product, research, commercial, and readiness auditing of software projects with deterministic scoring and an interactive Project Intelligence Command Center.
+Evidence-based Codex skill for technical, product, research, commercial, readiness, and semantic auditing of software projects with deterministic scoring and an interactive Project Intelligence Command Center.
 
 ## What it does
 
-Project Intelligence Auditor turns a repository into a structured, evidence-backed project intelligence snapshot. It separates completion from quality, readiness, and audit confidence; reconstructs module boundaries and code-level dependencies; detects false completion; tracks technical debt and risk; evaluates product and commercialization paths; ranks high-leverage work; and compares project state across audit snapshots.
+Project Intelligence Auditor turns a repository into a structured, evidence-backed project intelligence snapshot. It separates completion from quality, readiness, and audit confidence; reconstructs module boundaries and code-level dependencies; detects false completion; tracks technical debt and risk; evaluates product and commercialization paths; ranks high-leverage work; compares project state across audit snapshots; routes specialized review effort from repository signals; regression-tests deterministic collectors; and calibrates semantic judgment against explicit adversarial challenge cases.
 
 The tool is designed around one rule: **important numbers should come from explicit evidence and deterministic calculations, not from an LLM guessing a percentage.**
 
 The workflow is:
 
-1. collect repository evidence;
+1. collect repository evidence and project-profile routing hints;
 2. infer module and architecture candidates;
-3. review project intent, critical path, and semantic completeness;
-4. validate behavior safely;
-5. score module completion/quality from evidence-backed inputs;
-6. evaluate explicit readiness gates with coverage and uncertainty intervals;
-7. analyze product, research, commercial, security, and domain-specific risks;
-8. rank high-leverage actions;
-9. compare history and estimate descriptive trajectory when enough snapshots exist;
-10. render the Project Intelligence Command Center.
+3. recover project intent and confirm which specialized perspectives actually apply;
+4. review critical path and semantic completeness;
+5. validate behavior safely;
+6. score module completion/quality from evidence-backed inputs;
+7. evaluate explicit readiness gates with coverage and uncertainty intervals;
+8. analyze product, research, commercial, security, and domain-specific risks;
+9. rank high-leverage actions;
+10. check structural audit integrity and traceability;
+11. compare history and estimate descriptive trajectory when enough snapshots exist;
+12. render the Project Intelligence Command Center;
+13. when developing the auditor, regression-test both deterministic collectors and semantic judgment.
 
 ## Core principles
 
@@ -32,19 +35,27 @@ The workflow is:
 - README claims do not count as implementation evidence unless code/tests/results support them.
 - Static imports prove code-level dependency existence, not successful runtime integration.
 - Git activity is an activity signal, not proof of progress.
+- Project-profile scores are routing hints, not completion/readiness scores.
 - Mocks, stubs, hardcoded outputs, empty tests, dead paths, and demo-only flows are false-completion candidates until reviewed in context.
+- A deterministic benchmark pass is evidence for a narrow collector contract, not proof of semantic audit correctness.
+- A semantic challenge score is calibration evidence against reviewed cases, not universal model accuracy.
+- Critical semantic failures must remain visible even when a weighted average looks good.
 
 ## Repository layout
 
 ```text
+AGENTS.md
 SKILL.md
 references/
   scoring-model.md
   evidence-model.md
   architecture-audit.md
   architecture-inference.md
+  adaptive-routing.md
   readiness-gates.md
   trajectory-analysis.md
+  evaluation-methodology.md
+  semantic-calibration.md
   product-audit.md
   commercialization-audit.md
   research-audit.md
@@ -56,6 +67,8 @@ references/
 scripts/
   run_collectors.py
   scan_repository.py
+  detect_project_profile.py
+  generate_audit_plan.py
   discover_modules.py
   infer_architecture.py
   collect_dependencies.py
@@ -69,8 +82,22 @@ scripts/
   plan_actions.py
   compare_snapshots.py
   forecast_trajectory.py
+  check_audit_integrity.py
+  evaluate_benchmarks.py
+  evaluate_golden_audit.py
+  validate_challenge_corpus.py
+  prepare_challenge_tasks.py
+  evaluate_challenge_corpus.py
   validate_audit.py
   build_dashboard.py
+benchmarks/
+  manifest.json
+  README.md
+  fixtures/
+challenges/
+  manifest.json
+  README.md
+  cases/
 schema/
   audit.schema.json
 templates/
@@ -88,7 +115,10 @@ A target project should receive:
 ```text
 .project-audit/
   discovery.json
+  audit-plan.json
+  AUDIT_PLAN.md
   audit.json
+  integrity.json
   PROJECT_COMMAND_CENTER.html
   history/
     <timestamp>.json
@@ -99,7 +129,7 @@ PROJECT_COMMERCIALIZATION.md
 
 `audit.json` is the canonical structured source. The dashboard reads it directly rather than duplicating hand-maintained scores.
 
-## Deterministic workflow
+## Deterministic discovery and adaptive routing
 
 Run repository discovery:
 
@@ -107,12 +137,37 @@ Run repository discovery:
 python scripts/run_collectors.py . -o .project-audit/discovery.json
 ```
 
+The discovery suite now includes deterministic project-profile routing. It can surface evidence-backed hints such as web frontend/backend, AI/ML, medical/healthcare, research, hardware/embedded, data engineering, desktop/mobile, and infrastructure relevance.
+
+A detected profile means **inspect this perspective**, not **the project is proven to belong to this domain**. Codex must confirm project intent and critical-path relevance before drawing domain conclusions.
+
+Generate an adaptive plan:
+
+```bash
+python scripts/generate_audit_plan.py .
+```
+
+This writes:
+
+```text
+.project-audit/audit-plan.json
+.project-audit/AUDIT_PLAN.md
+```
+
+The plan selects applicable reference files and readiness gates while retaining the base engineering/architecture/validation audit. It never invents project-native test, deployment, inference, or hardware commands solely from ecosystem detection.
+
+See `references/adaptive-routing.md` for the routing contract.
+
 Bootstrap an unscored audit skeleton:
 
 ```bash
 python scripts/bootstrap_audit.py .project-audit/discovery.json \
   -o .project-audit/audit.json
 ```
+
+The bootstrap preserves the detected routing hints in `project_profile` but leaves semantic scores null until repository evidence is reviewed.
+
+## Scoring and readiness
 
 After Codex reviews evidence and fills module scoring inputs:
 
@@ -131,6 +186,17 @@ Rank recommendations:
 ```bash
 python scripts/plan_actions.py .project-audit/audit.json
 ```
+
+Check structural traceability and actionability of the snapshot:
+
+```bash
+python scripts/check_audit_integrity.py \
+  .project-audit/audit.json \
+  --minimum-coverage 85 \
+  -o .project-audit/integrity.json
+```
+
+`integrity_coverage` is intentionally narrow. It tells you whether scored modules, dependency edges, risks, assessed readiness gates, and validation runs are linked to known evidence and whether recommendations are actionable. It does not prove that the human/LLM judgments are correct.
 
 Validate the canonical snapshot:
 
@@ -161,6 +227,67 @@ python scripts/forecast_trajectory.py \
 
 The forecast is intentionally conservative: target ETA is omitted unless there are at least three observations, positive trend, and sufficient linear fit. Even when emitted, it is labeled descriptive rather than a delivery promise.
 
+## Deterministic self-evaluation
+
+The deterministic regression suite checks collector behavior against minimized fixtures:
+
+```bash
+python scripts/evaluate_benchmarks.py \
+  --manifest benchmarks/manifest.json \
+  --minimum-score 100 \
+  -o /tmp/pia-benchmark.json \
+  --markdown /tmp/pia-benchmark.md
+```
+
+The synthetic benchmark currently covers a clean layered Python service, a dependency cycle, false-completion traps, and a JavaScript/TypeScript monorepo.
+
+A 100% benchmark score means only that the deterministic collectors satisfied the declared fixture expectations.
+
+## Semantic calibration challenge corpus
+
+v0.5 adds a separate challenge corpus for reasoning failures that deterministic parsers cannot measure.
+
+Current challenge families include:
+
+- a polished operations dashboard backed by demo data;
+- an ML model with preprocessing leakage and invalid patient-level splitting;
+- a medical classifier with strong internal metrics but no external validation/calibration evidence;
+- a reproducible research artifact that is intentionally not production-ready;
+- a technically competent developer API with no validated commercial evidence.
+
+Validate corpus structure:
+
+```bash
+python scripts/validate_challenge_corpus.py
+```
+
+Generate blind task files that do not expose golden contracts:
+
+```bash
+python scripts/prepare_challenge_tasks.py
+```
+
+Run the auditor independently on each fixture and save canonical audit outputs as:
+
+```text
+.project-audit/challenge-results/<case-id>.json
+```
+
+Then evaluate agreement with the reviewed semantic contracts:
+
+```bash
+python scripts/evaluate_challenge_corpus.py \
+  .project-audit/challenge-results \
+  --require-all \
+  --minimum-score 80 \
+  -o .project-audit/challenge-evaluation.json \
+  --markdown .project-audit/challenge-evaluation.md
+```
+
+Golden expectations support broad score ranges, score relations, readiness-state sets, required semantic findings, commercialization-field state, and `critical` checks. Critical failures are reported separately and can fail calibration even when the weighted score is high.
+
+See `references/semantic-calibration.md` and `challenges/README.md` for the calibration protocol.
+
 ## Project Command Center
 
 The built-in standalone dashboard currently exposes:
@@ -181,18 +308,18 @@ The built-in standalone dashboard currently exposes:
 Install this repository as a Codex skill or make it available to Codex, then run:
 
 ```text
-Run the Project Intelligence Auditor on this repository. Perform a full evidence-based audit, execute safe validation checks, generate a new audit snapshot, compare it with previous snapshots if present, evaluate readiness gates, and build or update the Project Intelligence Command Center. Do not change product behavior except where minimal audit tooling is required.
+Run the Project Intelligence Auditor on this repository. Perform a full evidence-based audit. Start with deterministic discovery and adaptive routing, confirm the real project intent and critical path, execute safe validation checks, generate a new audit snapshot, compare it with previous snapshots if present, evaluate applicable readiness gates, verify audit integrity, and build or update the Project Intelligence Command Center. Do not change product behavior except where minimal audit tooling is required.
 ```
 
-For the full operating procedure, evidence model, scoring rules, domain-specific reviews, and dashboard contract, see `SKILL.md` and `references/`.
+For the full operating procedure, evidence model, scoring rules, domain-specific reviews, adaptive routing, evaluation methodology, semantic calibration methodology, and dashboard contract, see `SKILL.md` and `references/`.
 
 ## Status
 
-Current development line: **v0.3**.
+Current development line: **v0.5**.
 
-v0.3 adds static architecture inference, evidence-backed dependency bootstrapping, structured readiness scoring with uncertainty bounds, richer snapshot comparison, descriptive trajectory analysis, and expanded Command Center views.
+v0.5 now combines semantic calibration with adaptive audit routing. The auditor has an adversarial challenge corpus, richer golden-check semantics, critical semantic expectations, corpus validation, blind calibration tasks, a deterministic project-profile router, and an adaptive audit-plan generator.
 
-The project is intentionally being developed against real audit use cases rather than treating repository metrics as a proxy for project quality.
+The next useful layer is real-world calibration: run the skill against substantial external or user-owned repositories, independently review important conclusions, reduce discovered failures into permanent challenge cases, and track semantic regressions between auditor versions.
 
 ## License
 

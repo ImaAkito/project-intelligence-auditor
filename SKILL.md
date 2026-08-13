@@ -1,6 +1,6 @@
 ---
 name: project-intelligence-auditor
-description: Evidence-based repository audit for technical, product, research, commercial, and readiness intelligence with deterministic scoring, history analysis, and an interactive Project Command Center.
+description: Evidence-based repository audit for technical, product, research, commercial, and readiness intelligence with deterministic scoring, integrity checks, history analysis, and an interactive Project Command Center.
 ---
 
 # Project Intelligence Auditor
@@ -19,12 +19,15 @@ Keep these concepts separate:
 - **Readiness** — whether explicit gates for a target state are satisfied.
 - **Confidence** — how reliable the audit itself is.
 - **Evidence strength** — how strongly a specific claim is supported.
+- **Audit integrity coverage** — whether structured audit claims are traceable and actionable; this is not semantic correctness.
 
 Unknown evidence stays unknown. Do not manufacture precision.
 
 Do not infer readiness from code volume, commit count, file count, UI polish, README claims, or one passing happy-path demo.
 
 Aggregate scores must come from deterministic tooling after evidence-backed inputs have been filled. If the deterministic result looks wrong, inspect the evidence, weights, module boundaries, or assumptions instead of hand-editing the aggregate to a preferred number.
+
+When developing or modifying the auditor itself, read `references/evaluation-methodology.md` and run the synthetic benchmark suite. A benchmark score validates only declared deterministic fixture expectations; it is not an overall audit-accuracy claim.
 
 ## Evidence model
 
@@ -559,7 +562,33 @@ Trajectory is descriptive, not a delivery schedule.
 
 Only surface an ETA when the tool emits one. Do not fabricate an ETA from two snapshots or weak/noisy trend data.
 
-### Phase 18 — Validate the audit schema
+### Phase 18 — Check audit integrity coverage
+
+Read `references/evaluation-methodology.md`, especially the audit-artifact integrity layer.
+
+Run:
+
+```bash
+python scripts/check_audit_integrity.py \
+  .project-audit/audit.json \
+  --minimum-coverage 85 \
+  -o .project-audit/integrity.json
+```
+
+This checks structural traceability and actionability, including:
+
+- scored modules linked to known evidence;
+- dependency edges linked to evidence;
+- risks linked to evidence;
+- assessed readiness criteria linked to evidence and confidence;
+- validation runs linked to evidence;
+- recommendations containing measurable action fields.
+
+Do not describe `integrity_coverage` as audit accuracy. A high value means the artifact is structurally traceable; semantic judgments can still be wrong.
+
+If coverage is low, first fix missing evidence links or incomplete structured fields. If the evidence genuinely does not exist, preserve that limitation rather than fabricating support.
+
+### Phase 19 — Validate the audit schema
 
 Run:
 
@@ -569,7 +598,7 @@ python scripts/validate_audit.py .project-audit/audit.json
 
 Resolve schema errors before presentation.
 
-### Phase 19 — Build the Project Intelligence Command Center
+### Phase 20 — Build the Project Intelligence Command Center
 
 Read `references/dashboard-spec.md`.
 
@@ -600,16 +629,33 @@ Project → System → Module → Component → Finding → Evidence.
 
 Do not hardcode audit scores separately from `audit.json`.
 
-### Phase 20 — Validate artifacts
+### Phase 21 — Validate artifacts
 
 At minimum:
 
 - audit JSON validates;
+- audit integrity coverage is checked;
 - dashboard generates;
 - changed audit tooling compiles;
 - auditor tests pass when available;
 - dashboard output is inspected for obvious rendering defects;
 - browser tooling is used when available for navigation, responsiveness, console errors, and overflow.
+
+If this task modifies the Project Intelligence Auditor itself rather than merely using it, also run:
+
+```bash
+python scripts/evaluate_benchmarks.py \
+  --manifest benchmarks/manifest.json \
+  --minimum-score 100
+```
+
+For a human-reviewed real-project golden expectation set, use:
+
+```bash
+python scripts/evaluate_golden_audit.py AUDIT.json GOLDEN.json
+```
+
+Use broad reviewed ranges and categorical expectations. Do not encode arbitrary exact percentages as semantic truth.
 
 Do not stop immediately after file generation.
 
@@ -662,4 +708,5 @@ Detailed analysis belongs in generated artifacts.
 - Never treat heuristic scanner findings as proven defects without contextual review.
 - Never treat static import structure as verified runtime integration.
 - Never present descriptive trajectory as a delivery commitment.
+- Never present synthetic benchmark success as proof of semantic audit correctness.
 - Never perform broad refactoring of the audited product unless the user explicitly asks for implementation work in addition to auditing.

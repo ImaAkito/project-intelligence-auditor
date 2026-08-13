@@ -1,0 +1,42 @@
+{
+  "id": "ml-leakage",
+  "notes": [
+    "The fixture contains both preprocessing leakage and a row-level split despite repeated patient IDs.",
+    "A high AUC must not override invalid evaluation design."
+  ],
+  "checks": [
+    {
+      "type": "item_text_contains",
+      "section": "risks",
+      "text": "leakage",
+      "critical": true,
+      "weight": 4
+    },
+    {
+      "type": "item_text_contains",
+      "section": "risks",
+      "text": "patient",
+      "critical": true,
+      "weight": 3
+    },
+    {
+      "type": "readiness_state_in",
+      "gate": "ml_production",
+      "allowed": ["not_ready", "blocked", "critical_evidence_missing", "insufficient_evidence"],
+      "critical": true,
+      "weight": 3
+    },
+    {
+      "type": "item_text_contains",
+      "section": "recommendations",
+      "text": "split",
+      "weight": 2
+    },
+    {
+      "type": "score_range",
+      "key": "ml_production_readiness",
+      "max": 55,
+      "weight": 1
+    }
+  ]
+}
