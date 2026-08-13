@@ -1,0 +1,13 @@
+{
+  "id": "example-reviewed-expectations",
+  "notes": [
+    "Use broad reviewed ranges and categorical expectations instead of arbitrary exact percentages."
+  ],
+  "checks": [
+    {"type": "score_range", "key": "estimated_completion", "min": 60, "max": 75},
+    {"type": "module_classification", "module_id": "core", "expected": "critical_path"},
+    {"type": "module_evidence_level", "module_id": "core", "minimum": "E3"},
+    {"type": "readiness_state", "gate": "mvp", "expected": "ready"},
+    {"type": "recommendation_presence", "id": "rec-integration-tests"}
+  ]
+}
