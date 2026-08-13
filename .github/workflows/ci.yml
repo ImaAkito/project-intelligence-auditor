@@ -37,6 +37,12 @@ jobs:
             -o /tmp/pia-benchmark.json \
             --markdown /tmp/pia-benchmark.md
 
+      - name: Validate semantic challenge corpus
+        run: |
+          python scripts/validate_challenge_corpus.py \
+            --manifest challenges/manifest.json \
+            -o /tmp/challenge-corpus.json
+
       - name: Check example audit integrity
         run: |
           python scripts/check_audit_integrity.py \
