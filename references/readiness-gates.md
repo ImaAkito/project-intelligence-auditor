@@ -1,12 +1,83 @@
 # Readiness Gates Reference
 
-Readiness is not the same as completion. Evaluate each target state against explicit gates.
+Readiness is not the same as completion. Evaluate every target state against explicit evidence-backed criteria.
 
-Use `pass`, `fail`, `unknown`, or `not_applicable` for each gate.
+Use criterion statuses:
+
+- `pass`;
+- `partial`;
+- `fail`;
+- `unknown`;
+- `not_applicable`.
+
+A criterion should include an ID, weight, confidence, whether it is critical, and evidence references.
+
+## Structured gate format
+
+Example:
+
+```json
+{
+  "mvp": {
+    "score_key": "mvp_readiness",
+    "threshold": 75,
+    "minimum_coverage": 0.7,
+    "criteria": [
+      {
+        "id": "core-workflow",
+        "title": "Core workflow is end-to-end",
+        "status": "pass",
+        "weight": 4,
+        "confidence": 0.95,
+        "critical": true,
+        "evidence_ids": ["ev-core-integration"]
+      },
+      {
+        "id": "failure-handling",
+        "title": "Critical failure modes are handled",
+        "status": "partial",
+        "weight": 3,
+        "confidence": 0.8,
+        "critical": true,
+        "evidence_ids": ["ev-failure-tests"]
+      },
+      {
+        "id": "reproducible-setup",
+        "status": "unknown",
+        "weight": 2,
+        "confidence": 0.0,
+        "critical": false,
+        "evidence_ids": []
+      }
+    ]
+  }
+}
+```
+
+Then run:
+
+```bash
+python scripts/score_readiness.py .project-audit/audit.json
+```
+
+## Deterministic scoring semantics
+
+`score_readiness.py` separates four things:
+
+- assessed score — weighted score over known criteria only;
+- coverage — fraction of applicable criterion weight that is actually assessed;
+- lower/upper bounds — explicit range produced by unresolved criteria;
+- final gate score — emitted only when minimum coverage is reached.
+
+Unknown criteria are not silently converted to zero. They widen the score interval and lower evidence coverage.
+
+A failed critical criterion marks the gate `blocked` even if the numeric score is otherwise high.
+
+A critical unknown marks the gate `critical_evidence_missing` once minimum coverage is sufficient.
 
 ## Prototype Ready
 
-Typical gates:
+Typical criteria:
 
 - primary technical hypothesis demonstrated;
 - minimum end-to-end path executes;
@@ -18,7 +89,7 @@ A prototype may contain manual steps and weak operations.
 
 ## MVP Ready
 
-Typical gates:
+Typical criteria:
 
 - target user and problem are explicit;
 - core workflow is end-to-end;
@@ -32,7 +103,7 @@ MVP does not imply production robustness or market validation.
 
 ## Commercial Ready
 
-Typical gates:
+Typical criteria:
 
 - identifiable customer/ICP;
 - value proposition tied to a real workflow;
@@ -48,7 +119,7 @@ Technical readiness alone cannot satisfy commercial readiness.
 
 ## Production Ready
 
-Typical gates:
+Typical criteria:
 
 - critical workflows are validated;
 - error handling and rollback/recovery are adequate;
@@ -63,7 +134,7 @@ Typical gates:
 
 ## Scale Ready
 
-Typical gates:
+Typical criteria:
 
 - measured scaling characteristics;
 - bottlenecks identified and acceptable;
@@ -76,32 +147,20 @@ Typical gates:
 
 ## Research Ready
 
-Typical gates include a testable research question, valid experimental design, baseline, reproducibility, meaningful metrics, leakage/confounding controls, and uncertainty/error analysis.
+Typical criteria include a testable research question, valid experimental design, baseline, reproducibility, meaningful metrics, leakage/confounding controls, and uncertainty/error analysis.
 
 ## Publication Ready
 
-Typical gates include a scoped novelty claim, adequate baselines and ablations, reproducible results, appropriate statistical treatment, explicit limitations, evidence-matched conclusions, and regenerable figures/tables/results.
+Typical criteria include a scoped novelty claim, adequate baselines and ablations, reproducible results, appropriate statistical treatment, explicit limitations, evidence-matched conclusions, and regenerable figures/tables/results.
 
 ## ML Production Ready
 
-Typical gates include training/inference preprocessing consistency, versioned model artifacts, reproducible evaluation, representative validation, measured latency/resource requirements, monitoring/drift strategy, fallback/rollback behavior, and data/model lineage.
+Typical criteria include training/inference preprocessing consistency, versioned model artifacts, reproducible evaluation, representative validation, measured latency/resource requirements, monitoring/drift strategy, fallback/rollback behavior, and data/model lineage.
 
 ## Clinical Ready
 
-Clinical readiness is context-dependent and must not be inferred from model accuracy alone. Potential gates include intended use, clinically meaningful ground truth, patient-level splits, appropriate sensitivity/specificity and calibration, external validation, subgroup/domain-shift analysis, workflow integration, safety/error analysis, privacy/auditability, and a understood regulatory pathway.
+Clinical readiness is context-dependent and must not be inferred from model accuracy alone. Potential criteria include intended use, clinically meaningful ground truth, patient-level splits, appropriate sensitivity/specificity and calibration, external validation, subgroup/domain-shift analysis, workflow integration, safety/error analysis, privacy/auditability, and an understood regulatory pathway.
 
 ## Hardware Ready
 
-Potential gates include schematic/PCB maturity, BOM/component availability, firmware, power/thermal considerations, mechanical integration, calibration, fault handling, prototype testing, manufacturability, and serviceability.
-
-## Readiness scoring
-
-Do not simply average unrelated gates if a failed gate is a hard blocker.
-
-Classify gates as:
-
-- hard gate;
-- important gate;
-- supporting gate.
-
-A failed hard gate should cap readiness for that target state until resolved. Document any cap explicitly.
+Potential criteria include schematic/PCB maturity, BOM/component availability, firmware, power/thermal considerations, mechanical integration, calibration, fault handling, prototype testing, manufacturability, and serviceability.
