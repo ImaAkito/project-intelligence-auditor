@@ -1,0 +1,41 @@
+{
+  "id": "polished-mock-app",
+  "notes": [
+    "The repository intentionally looks polished while its operational data path is still demo-only.",
+    "The auditor should not reward presentation quality as end-to-end product completion."
+  ],
+  "checks": [
+    {
+      "type": "item_text_contains",
+      "section": "risks",
+      "text": "demo",
+      "critical": true,
+      "weight": 3
+    },
+    {
+      "type": "readiness_state_in",
+      "gate": "mvp",
+      "allowed": ["not_ready", "nearly_ready", "blocked", "critical_evidence_missing"],
+      "critical": true,
+      "weight": 3
+    },
+    {
+      "type": "score_range",
+      "key": "estimated_completion",
+      "max": 70,
+      "weight": 1
+    },
+    {
+      "type": "item_text_contains",
+      "section": "recommendations",
+      "text": "integration",
+      "weight": 1
+    },
+    {
+      "type": "item_text_contains",
+      "section": "bottlenecks",
+      "text": "backend",
+      "weight": 1
+    }
+  ]
+}
