@@ -11,6 +11,22 @@ import collect_dependencies
 import scan_repository
 from audit_utils import iter_files, relative_posix, resolve_root, write_json
 
+EXCLUDED_DIRECTORY_NAMES = {
+    ".git",
+    ".hg",
+    ".svn",
+    ".project-audit",
+    ".venv",
+    "venv",
+    "env",
+    "node_modules",
+    "dist",
+    "build",
+    "target",
+    "vendor",
+    "__pycache__",
+}
+
 PROFILE_DEPENDENCIES: dict[str, dict[str, float]] = {
     "web_frontend": {
         "react": 35,
@@ -113,6 +129,10 @@ PROFILE_FILE_SUFFIXES: dict[str, dict[str, float]] = {
         ".ipynb": 18,
         ".tex": 18,
     },
+    "devops_infrastructure": {
+        ".tf": 30,
+        ".tfvars": 20,
+    },
 }
 
 PROFILE_FILENAMES: dict[str, dict[str, float]] = {
@@ -120,7 +140,6 @@ PROFILE_FILENAMES: dict[str, dict[str, float]] = {
         "Dockerfile": 25,
         "docker-compose.yml": 20,
         "docker-compose.yaml": 20,
-        "terraform.tf": 35,
         "Pulumi.yaml": 35,
         "Chart.yaml": 25,
     },
@@ -224,10 +243,18 @@ def collect_file_signals(root: Path, buckets: dict[str, list[dict[str, Any]]]) -
                 )
 
 
+def is_excluded_directory(path: Path, root: Path) -> bool:
+    try:
+        relative = path.relative_to(root)
+    except ValueError:
+        return True
+    return any(part in EXCLUDED_DIRECTORY_NAMES for part in relative.parts)
+
+
 def collect_directory_signals(root: Path, buckets: dict[str, list[dict[str, Any]]]) -> None:
     seen: set[tuple[str, str]] = set()
     for path in root.rglob("*"):
-        if not path.is_dir():
+        if not path.is_dir() or is_excluded_directory(path, root):
             continue
         name = path.name.lower()
         for profile, names in PROFILE_DIRECTORY_HINTS.items():
@@ -245,7 +272,6 @@ def collect_directory_signals(root: Path, buckets: dict[str, list[dict[str, Any]
 
 
 def profile_score(signals: list[dict[str, Any]]) -> float:
-    # Repeated weak hints have diminishing value. Strong explicit ecosystem signals dominate.
     ordered = sorted((float(item["weight"]) for item in signals), reverse=True)
     score = 0.0
     attenuation = 1.0
@@ -304,7 +330,10 @@ def detect(root: Path | str) -> dict[str, Any]:
                 "applicable": score >= 35.0,
                 "signals": sorted(
                     signals,
-                    key=lambda item: (-float(item["weight"]), str(item.get("source") or "")),
+                    key=lambda item: (
+                        -float(item["weight"]),
+                        str(item.get("source") or ""),
+                    ),
                 )[:20],
             }
         )
@@ -319,10 +348,17 @@ def detect(root: Path | str) -> dict[str, Any]:
     ]
     readiness_gates = ["prototype", "mvp", "production"]
 
-    if any(profile in applicable for profile in {"web_backend", "web_frontend", "desktop", "mobile"}):
+    product_profiles = {"web_backend", "web_frontend", "desktop", "mobile"}
+    if any(profile in applicable for profile in product_profiles):
         perspectives.extend(["security", "product", "commercial"])
         readiness_gates.append("commercial")
-        references.extend(["references/security-audit.md", "references/product-audit.md", "references/commercialization-audit.md"])
+        references.extend(
+            [
+                "references/security-audit.md",
+                "references/product-audit.md",
+                "references/commercialization-audit.md",
+            ]
+        )
     if "machine_learning" in applicable:
         perspectives.append("ai_ml")
     if "medical_healthcare" in applicable:
@@ -342,7 +378,10 @@ def detect(root: Path | str) -> dict[str, Any]:
     return {
         "collector": "detect_project_profile",
         "root": str(root_path),
-        "profiles": sorted(profiles, key=lambda item: (-float(item["score"]), item["id"])),
+        "profiles": sorted(
+            profiles,
+            key=lambda item: (-float(item["score"]), item["id"]),
+        ),
         "applicable_profiles": applicable,
         "recommended_perspectives": unique(perspectives),
         "recommended_references": unique(references),
@@ -362,7 +401,9 @@ def detect(root: Path | str) -> dict[str, Any]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Detect deterministic project-profile routing hints.")
+    parser = argparse.ArgumentParser(
+        description="Detect deterministic project-profile routing hints."
+    )
     parser.add_argument("root", nargs="?", default=".", type=Path)
     parser.add_argument("-o", "--output", type=Path)
     args = parser.parse_args()
