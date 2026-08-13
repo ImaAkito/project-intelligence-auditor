@@ -115,7 +115,7 @@ def bootstrap(discovery: dict[str, Any], project_name: str | None = None) -> dic
     return {
         'metadata': {
             'generated_at': datetime.now(timezone.utc).isoformat(),
-            'auditor_version': '0.3.0',
+            'auditor_version': '0.4.0',
             'repository': root,
             'commit': None,
             'snapshot_kind': 'bootstrap',
