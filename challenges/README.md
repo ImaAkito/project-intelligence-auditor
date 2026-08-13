@@ -1,6 +1,6 @@
 # Semantic Challenge Corpus
 
-This corpus is for calibrating the model-assisted parts of Project Intelligence Auditor against deliberately tricky repositories.
+This corpus calibrates the model-assisted parts of Project Intelligence Auditor against deliberately tricky repositories.
 
 The deterministic benchmark suite under `benchmarks/` answers questions such as "did the parser recover this import edge?". The semantic challenge corpus asks harder questions such as:
 
@@ -15,10 +15,12 @@ Each case contains:
 ```text
 challenges/cases/<case>/
   fixture/        # repository presented to the auditor
-  golden.json     # human-reviewed semantic expectations
+  golden.json     # human-reviewed semantic expectations, kept outside fixture
 ```
 
-The golden files intentionally prefer broad score ranges, score relations, categorical readiness states, required findings, and evidence expectations. They should not encode arbitrary exact percentages.
+The auditor being calibrated should receive only the fixture plus the normal auditor instructions. It should not inspect the golden contract before producing its result.
+
+The goldens intentionally prefer broad score ranges, score relations, categorical readiness states, required findings, and evidence expectations. They should not encode arbitrary exact percentages.
 
 ## Validate the corpus
 
@@ -28,9 +30,26 @@ python scripts/validate_challenge_corpus.py
 
 This checks corpus structure and whether every golden check type is understood by the evaluator. It does not claim semantic accuracy.
 
+## Prepare blind task files
+
+Generate one task per challenge without exposing the golden answers:
+
+```bash
+python scripts/prepare_challenge_tasks.py
+```
+
+This creates:
+
+```text
+.project-audit/challenge-tasks/<case-id>.md
+.project-audit/challenge-results/
+```
+
+Each task points Codex at exactly one fixture and tells it where to save the canonical audit JSON.
+
 ## Run a calibration experiment
 
-For every case, run Project Intelligence Auditor against the case's `fixture/` directory and save the resulting canonical audit as:
+Run Project Intelligence Auditor independently against every generated task/fixture and save the resulting canonical audits under:
 
 ```text
 .project-audit/challenge-results/<case-id>.json
