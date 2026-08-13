@@ -5,176 +5,39 @@
   "type": "object",
   "required": ["metadata", "project", "modules", "scores", "risks", "recommendations"],
   "properties": {
-    "metadata": {
-      "type": "object",
-      "required": ["generated_at", "auditor_version"],
-      "properties": {
-        "generated_at": {"type": "string"},
-        "auditor_version": {"type": "string"},
-        "repository": {"type": ["string", "null"]},
-        "commit": {"type": ["string", "null"]},
-        "snapshot_kind": {"type": ["string", "null"]}
-      },
-      "additionalProperties": true
-    },
-    "project": {
-      "type": "object",
-      "required": ["name"],
-      "properties": {
-        "name": {"type": "string"},
-        "mission": {"type": ["string", "null"]},
-        "target_users": {"type": "array", "items": {"type": "string"}},
-        "current_stage": {"type": ["string", "null"]},
-        "trl": {"type": ["integer", "null"], "minimum": 1, "maximum": 9},
-        "scope_status": {"type": ["string", "null"]}
-      },
-      "additionalProperties": true
-    },
-    "scores": {
-      "type": "object",
-      "properties": {},
-      "additionalProperties": {"$ref": "#/$defs/scoreOrNull"}
-    },
+    "metadata": {"type": "object", "required": ["generated_at", "auditor_version"], "properties": {"generated_at": {"type": "string"}, "auditor_version": {"type": "string"}, "repository": {"type": ["string", "null"]}, "commit": {"type": ["string", "null"]}, "snapshot_kind": {"type": ["string", "null"]}}, "additionalProperties": true},
+    "project": {"type": "object", "required": ["name"], "properties": {"name": {"type": "string"}, "mission": {"type": ["string", "null"]}, "target_users": {"type": "array", "items": {"type": "string"}}, "current_stage": {"type": ["string", "null"]}, "trl": {"type": ["integer", "null"], "minimum": 1, "maximum": 9}, "scope_status": {"type": ["string", "null"]}}, "additionalProperties": true},
+    "scores": {"type": "object", "properties": {}, "additionalProperties": {"$ref": "#/$defs/scoreOrNull"}},
     "modules": {"type": "array", "items": {"$ref": "#/$defs/module"}},
-    "dependency_edges": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["from", "to"],
-        "properties": {
-          "from": {"type": "string"},
-          "to": {"type": "string"},
-          "kind": {"type": ["string", "null"]},
-          "confidence": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
-          "evidence_ids": {"type": "array", "items": {"type": "string"}}
-        },
-        "additionalProperties": true
-      }
-    },
+    "dependency_edges": {"type": "array", "items": {"$ref": "#/$defs/dependencyEdge"}},
+    "architecture_analysis": {"$ref": "#/$defs/architectureAnalysis"},
     "evidence": {"type": "array", "items": {"$ref": "#/$defs/evidence"}},
-    "validation_runs": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["id", "status"],
-        "properties": {
-          "id": {"type": "string"},
-          "action": {"type": ["string", "null"]},
-          "command": {"type": ["string", "null"]},
-          "status": {"type": "string", "enum": ["tested_pass", "tested_fail", "unable_to_test", "not_applicable"]},
-          "summary": {"type": ["string", "null"]},
-          "evidence_ids": {"type": "array", "items": {"type": "string"}}
-        },
-        "additionalProperties": true
-      }
-    },
+    "validation_runs": {"type": "array", "items": {"type": "object", "required": ["id", "status"], "properties": {"id": {"type": "string"}, "action": {"type": ["string", "null"]}, "command": {"type": ["string", "null"]}, "status": {"type": "string", "enum": ["tested_pass", "tested_fail", "unable_to_test", "not_applicable"]}, "summary": {"type": ["string", "null"]}, "evidence_ids": {"type": "array", "items": {"type": "string"}}}, "additionalProperties": true}},
     "risks": {"type": "array", "items": {"$ref": "#/$defs/risk"}},
     "technical_debt": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
-    "bottlenecks": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["id", "title"],
-        "properties": {
-          "id": {"type": "string"},
-          "title": {"type": "string"},
-          "description": {"type": ["string", "null"]},
-          "why": {"type": ["string", "null"]},
-          "severity": {"type": ["string", "null"]},
-          "evidence_ids": {"type": "array", "items": {"type": "string"}}
-        },
-        "additionalProperties": true
-      }
-    },
+    "bottlenecks": {"type": "array", "items": {"type": "object", "required": ["id", "title"], "properties": {"id": {"type": "string"}, "title": {"type": "string"}, "description": {"type": ["string", "null"]}, "why": {"type": ["string", "null"]}, "severity": {"type": ["string", "null"]}, "evidence_ids": {"type": "array", "items": {"type": "string"}}}, "additionalProperties": true}},
     "directions": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
     "commercialization": {"type": "object", "additionalProperties": true},
-    "readiness_gates": {"type": "object", "additionalProperties": true},
+    "readiness_gates": {"type": "object", "additionalProperties": {"$ref": "#/$defs/readinessGate"}},
     "recommendations": {"type": "array", "items": {"$ref": "#/$defs/recommendation"}},
     "action_plan": {"type": "object", "additionalProperties": true},
     "limitations": {"type": "array", "items": {"type": "string"}},
-    "history": {"type": "object", "additionalProperties": true}
+    "history": {"type": "object", "properties": {"trajectory": {"$ref": "#/$defs/trajectory"}}, "additionalProperties": true}
   },
   "additionalProperties": true,
   "$defs": {
     "scoreOrNull": {"type": ["number", "null"], "minimum": 0, "maximum": 100},
-    "module": {
-      "type": "object",
-      "required": ["id", "name"],
-      "properties": {
-        "id": {"type": "string"},
-        "name": {"type": "string"},
-        "path": {"type": ["string", "null"]},
-        "role_hint": {"type": ["string", "null"]},
-        "responsibility": {"type": ["string", "null"]},
-        "classification": {"type": "string", "enum": ["critical_path", "important", "optional", "experimental", "legacy", "dead", "unknown"]},
-        "implementation": {"$ref": "#/$defs/scoreOrNull"},
-        "integration": {"$ref": "#/$defs/scoreOrNull"},
-        "validation": {"$ref": "#/$defs/scoreOrNull"},
-        "documentation": {"$ref": "#/$defs/scoreOrNull"},
-        "operational_readiness": {"$ref": "#/$defs/scoreOrNull"},
-        "completion": {"$ref": "#/$defs/scoreOrNull"},
-        "confirmed_completion": {"$ref": "#/$defs/scoreOrNull"},
-        "quality": {"$ref": "#/$defs/scoreOrNull"},
-        "confidence": {"$ref": "#/$defs/scoreOrNull"},
-        "criticality": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
-        "evidence_level": {"type": "string", "enum": ["E0", "E1", "E2", "E3", "E4"]},
-        "dependencies": {"type": "array", "items": {"type": "string"}},
-        "consumers": {"type": "array", "items": {"type": "string"}},
-        "evidence_ids": {"type": "array", "items": {"type": "string"}},
-        "status": {"type": ["string", "null"]}
-      },
-      "additionalProperties": true
-    },
-    "evidence": {
-      "type": "object",
-      "required": ["id", "level", "claim"],
-      "properties": {
-        "id": {"type": "string"},
-        "level": {"type": "string", "enum": ["E0", "E1", "E2", "E3", "E4"]},
-        "claim": {"type": "string"},
-        "kind": {"type": ["string", "null"]},
-        "source": {"type": ["string", "null"]},
-        "location": {"type": ["string", "null"]},
-        "confidence": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
-        "verified_at": {"type": ["string", "null"]}
-      },
-      "additionalProperties": true
-    },
-    "risk": {
-      "type": "object",
-      "required": ["id", "title", "probability", "impact"],
-      "properties": {
-        "id": {"type": "string"},
-        "title": {"type": "string"},
-        "probability": {"type": "integer", "minimum": 1, "maximum": 5},
-        "impact": {"type": "integer", "minimum": 1, "maximum": 5},
-        "score": {"type": ["integer", "number", "null"], "minimum": 1, "maximum": 25},
-        "category": {"type": ["string", "null"]},
-        "mitigation": {"type": ["string", "null"]},
-        "evidence_ids": {"type": "array", "items": {"type": "string"}}
-      },
-      "additionalProperties": true
-    },
-    "recommendation": {
-      "type": "object",
-      "required": ["id", "title"],
-      "properties": {
-        "id": {"type": "string"},
-        "title": {"type": "string"},
-        "priority": {"type": ["string", "null"]},
-        "phase": {"type": ["string", "null"]},
-        "impact": {"type": ["number", "null"], "minimum": 0, "maximum": 100},
-        "risk_reduction": {"type": ["number", "null"], "minimum": 0, "maximum": 100},
-        "effort": {"type": ["string", "number", "null"]},
-        "confidence": {"type": ["number", "null"], "minimum": 0, "maximum": 100},
-        "critical_path": {"type": ["boolean", "null"]},
-        "unlocks": {"type": "array", "items": {"type": "string"}},
-        "leverage_score": {"type": ["number", "null"], "minimum": 0},
-        "definition_of_done": {"type": ["string", "null"]},
-        "evidence_required": {"type": ["string", "array", "null"]},
-        "why": {"type": ["string", "null"]}
-      },
-      "additionalProperties": true
-    }
+    "module": {"type": "object", "required": ["id", "name"], "properties": {"id": {"type": "string"}, "name": {"type": "string"}, "path": {"type": ["string", "null"]}, "role_hint": {"type": ["string", "null"]}, "responsibility": {"type": ["string", "null"]}, "classification": {"type": "string", "enum": ["critical_path", "important", "optional", "experimental", "legacy", "dead", "unknown"]}, "implementation": {"$ref": "#/$defs/scoreOrNull"}, "integration": {"$ref": "#/$defs/scoreOrNull"}, "validation": {"$ref": "#/$defs/scoreOrNull"}, "documentation": {"$ref": "#/$defs/scoreOrNull"}, "operational_readiness": {"$ref": "#/$defs/scoreOrNull"}, "completion": {"$ref": "#/$defs/scoreOrNull"}, "confirmed_completion": {"$ref": "#/$defs/scoreOrNull"}, "quality": {"$ref": "#/$defs/scoreOrNull"}, "confidence": {"$ref": "#/$defs/scoreOrNull"}, "criticality": {"type": ["number", "null"], "minimum": 0, "maximum": 1}, "evidence_level": {"type": "string", "enum": ["E0", "E1", "E2", "E3", "E4"]}, "dependencies": {"type": "array", "items": {"type": "string"}}, "consumers": {"type": "array", "items": {"type": "string"}}, "evidence_ids": {"type": "array", "items": {"type": "string"}}, "status": {"type": ["string", "null"]}}, "additionalProperties": true},
+    "dependencyEdge": {"type": "object", "required": ["from", "to"], "properties": {"from": {"type": "string"}, "to": {"type": "string"}, "kind": {"type": ["string", "null"]}, "confidence": {"type": ["number", "null"], "minimum": 0, "maximum": 1}, "evidence_ids": {"type": "array", "items": {"type": "string"}}, "occurrences": {"type": ["integer", "null"], "minimum": 0}}, "additionalProperties": true},
+    "architectureAnalysis": {"type": "object", "properties": {"cycles": {"type": "array", "items": {"type": "array", "items": {"type": "string"}, "minItems": 2}}, "hotspots": {"type": "array", "items": {"type": "object", "properties": {"module_id": {"type": "string"}, "fan_in": {"type": ["integer", "null"], "minimum": 0}, "fan_out": {"type": ["integer", "null"], "minimum": 0}, "centrality": {"type": ["number", "null"], "minimum": 0, "maximum": 1}}, "additionalProperties": true}}, "limitations": {"type": "array", "items": {"type": "string"}}, "status": {"type": ["string", "null"]}}, "additionalProperties": true},
+    "evidence": {"type": "object", "required": ["id", "level", "claim"], "properties": {"id": {"type": "string"}, "level": {"type": "string", "enum": ["E0", "E1", "E2", "E3", "E4"]}, "claim": {"type": "string"}, "kind": {"type": ["string", "null"]}, "source": {"type": ["string", "null"]}, "location": {"type": ["string", "null"]}, "confidence": {"type": ["number", "null"], "minimum": 0, "maximum": 1}, "verified_at": {"type": ["string", "null"]}}, "additionalProperties": true},
+    "risk": {"type": "object", "required": ["id", "title", "probability", "impact"], "properties": {"id": {"type": "string"}, "title": {"type": "string"}, "probability": {"type": "integer", "minimum": 1, "maximum": 5}, "impact": {"type": "integer", "minimum": 1, "maximum": 5}, "score": {"type": ["integer", "number", "null"], "minimum": 1, "maximum": 25}, "category": {"type": ["string", "null"]}, "mitigation": {"type": ["string", "null"]}, "evidence_ids": {"type": "array", "items": {"type": "string"}}}, "additionalProperties": true},
+    "readinessCriterion": {"type": "object", "required": ["id", "status"], "properties": {"id": {"type": "string"}, "title": {"type": ["string", "null"]}, "status": {"type": "string", "enum": ["pass", "partial", "fail", "unknown", "not_applicable"]}, "weight": {"type": "number", "minimum": 0}, "confidence": {"type": "number", "minimum": 0, "maximum": 1}, "critical": {"type": "boolean"}, "evidence_ids": {"type": "array", "items": {"type": "string"}}, "reason": {"type": ["string", "null"]}}, "additionalProperties": true},
+    "readinessEvaluation": {"type": "object", "properties": {"score": {"$ref": "#/$defs/scoreOrNull"}, "assessed_score": {"$ref": "#/$defs/scoreOrNull"}, "lower_bound": {"$ref": "#/$defs/scoreOrNull"}, "upper_bound": {"$ref": "#/$defs/scoreOrNull"}, "coverage": {"$ref": "#/$defs/scoreOrNull"}, "confidence": {"$ref": "#/$defs/scoreOrNull"}, "threshold": {"$ref": "#/$defs/scoreOrNull"}, "minimum_coverage": {"$ref": "#/$defs/scoreOrNull"}, "state": {"type": "string", "enum": ["ready", "nearly_ready", "not_ready", "blocked", "insufficient_evidence", "critical_evidence_missing", "not_applicable"]}, "blocked": {"type": "boolean"}, "critical_failures": {"type": "array", "items": {"type": "string"}}, "critical_unknowns": {"type": "array", "items": {"type": "string"}}, "status_counts": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}}}, "additionalProperties": true},
+    "readinessGate": {"type": "object", "properties": {"score_key": {"type": ["string", "null"]}, "threshold": {"type": "number", "minimum": 0, "maximum": 100}, "minimum_coverage": {"type": "number", "minimum": 0, "maximum": 1}, "criteria": {"type": "array", "items": {"$ref": "#/$defs/readinessCriterion"}}, "evaluation": {"$ref": "#/$defs/readinessEvaluation"}}, "additionalProperties": true},
+    "trajectoryPoint": {"type": "object", "required": ["timestamp", "value"], "properties": {"timestamp": {"type": "string"}, "value": {"type": "number", "minimum": 0, "maximum": 100}}, "additionalProperties": true},
+    "trajectoryTrend": {"type": "object", "properties": {"points": {"type": "integer", "minimum": 2}, "series": {"type": "array", "items": {"$ref": "#/$defs/trajectoryPoint"}}, "first_value": {"$ref": "#/$defs/scoreOrNull"}, "latest_value": {"$ref": "#/$defs/scoreOrNull"}, "latest_delta": {"type": ["number", "null"]}, "slope_per_day": {"type": ["number", "null"]}, "delta_per_30d": {"type": ["number", "null"]}, "direction": {"type": "string", "enum": ["improving", "regressing", "flat"]}, "r2": {"type": ["number", "null"], "minimum": 0, "maximum": 1}, "target": {"$ref": "#/$defs/scoreOrNull"}, "eta_days": {"type": ["number", "null"], "minimum": 0}, "eta_timestamp": {"type": ["string", "null"]}, "eta_is_descriptive_only": {"type": "boolean"}}, "additionalProperties": true},
+    "trajectory": {"type": "object", "properties": {"generated_at": {"type": "string"}, "snapshot_count": {"type": "integer", "minimum": 0}, "score_trends": {"type": "object", "additionalProperties": {"$ref": "#/$defs/trajectoryTrend"}}, "module_trends": {"type": "object", "additionalProperties": true}, "regressions": {"type": "array", "items": {"type": "object", "additionalProperties": true}}, "interpretation": {"type": "array", "items": {"type": "string"}}}, "additionalProperties": true},
+    "recommendation": {"type": "object", "required": ["id", "title"], "properties": {"id": {"type": "string"}, "title": {"type": "string"}, "priority": {"type": ["string", "null"]}, "phase": {"type": ["string", "null"]}, "impact": {"type": ["number", "null"], "minimum": 0, "maximum": 100}, "risk_reduction": {"type": ["number", "null"], "minimum": 0, "maximum": 100}, "effort": {"type": ["string", "number", "null"]}, "confidence": {"type": ["number", "null"], "minimum": 0, "maximum": 100}, "critical_path": {"type": ["boolean", "null"]}, "unlocks": {"type": "array", "items": {"type": "string"}}, "leverage_score": {"type": ["number", "null"], "minimum": 0}, "definition_of_done": {"type": ["string", "null"]}, "evidence_required": {"type": ["string", "array", "null"]}, "why": {"type": ["string", "null"]}}, "additionalProperties": true}
   }
 }
