@@ -44,6 +44,14 @@ jobs:
             --minimum-coverage 100 \
             -o /tmp/audit-integrity.json
 
+      - name: Evaluate golden audit expectations
+        run: |
+          python scripts/evaluate_golden_audit.py \
+            examples/example-audit.json \
+            benchmarks/golden-example.json \
+            --minimum-score 100 \
+            -o /tmp/golden-evaluation.json
+
       - name: Validate example audit
         run: python scripts/validate_audit.py examples/example-audit.json
 
