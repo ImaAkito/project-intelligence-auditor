@@ -4,7 +4,7 @@ Evidence-based Codex skill for technical, product, research, commercial, and rea
 
 ## What it does
 
-Project Intelligence Auditor turns a repository into a structured, evidence-backed project intelligence snapshot. It separates completion from quality, readiness, and audit confidence; reconstructs module boundaries and code-level dependencies; detects false completion; tracks technical debt and risk; evaluates product and commercialization paths; ranks high-leverage work; and compares project state across audit snapshots.
+Project Intelligence Auditor turns a repository into a structured, evidence-backed project intelligence snapshot. It separates completion from quality, readiness, and audit confidence; reconstructs module boundaries and code-level dependencies; detects false completion; tracks technical debt and risk; evaluates product and commercialization paths; ranks high-leverage work; compares project state across audit snapshots; and now regression-tests its own deterministic collectors against explicit benchmark fixtures.
 
 The tool is designed around one rule: **important numbers should come from explicit evidence and deterministic calculations, not from an LLM guessing a percentage.**
 
@@ -18,8 +18,9 @@ The workflow is:
 6. evaluate explicit readiness gates with coverage and uncertainty intervals;
 7. analyze product, research, commercial, security, and domain-specific risks;
 8. rank high-leverage actions;
-9. compare history and estimate descriptive trajectory when enough snapshots exist;
-10. render the Project Intelligence Command Center.
+9. check structural audit integrity and traceability;
+10. compare history and estimate descriptive trajectory when enough snapshots exist;
+11. render the Project Intelligence Command Center.
 
 ## Core principles
 
@@ -33,6 +34,7 @@ The workflow is:
 - Static imports prove code-level dependency existence, not successful runtime integration.
 - Git activity is an activity signal, not proof of progress.
 - Mocks, stubs, hardcoded outputs, empty tests, dead paths, and demo-only flows are false-completion candidates until reviewed in context.
+- The auditor itself must be regression-tested; a benchmark pass is evidence for a narrow collector contract, not proof of universal audit accuracy.
 
 ## Repository layout
 
@@ -45,6 +47,7 @@ references/
   architecture-inference.md
   readiness-gates.md
   trajectory-analysis.md
+  evaluation-methodology.md
   product-audit.md
   commercialization-audit.md
   research-audit.md
@@ -69,8 +72,14 @@ scripts/
   plan_actions.py
   compare_snapshots.py
   forecast_trajectory.py
+  check_audit_integrity.py
+  evaluate_benchmarks.py
   validate_audit.py
   build_dashboard.py
+benchmarks/
+  manifest.json
+  README.md
+  fixtures/
 schema/
   audit.schema.json
 templates/
@@ -132,6 +141,17 @@ Rank recommendations:
 python scripts/plan_actions.py .project-audit/audit.json
 ```
 
+Check structural traceability and actionability of the snapshot:
+
+```bash
+python scripts/check_audit_integrity.py \
+  .project-audit/audit.json \
+  --minimum-coverage 85 \
+  -o .project-audit/integrity.json
+```
+
+`integrity_coverage` is intentionally narrow. It tells you whether scored modules, dependency edges, risks, assessed readiness gates, and validation runs are linked to known evidence and whether recommendations are actionable. It does not prove that the human/LLM judgments are correct.
+
 Validate the canonical snapshot:
 
 ```bash
@@ -161,6 +181,29 @@ python scripts/forecast_trajectory.py \
 
 The forecast is intentionally conservative: target ETA is omitted unless there are at least three observations, positive trend, and sufficient linear fit. Even when emitted, it is labeled descriptive rather than a delivery promise.
 
+## Self-evaluation benchmark suite
+
+v0.4 adds an explicit dogfooding layer for the auditor itself.
+
+Run:
+
+```bash
+python scripts/evaluate_benchmarks.py \
+  --manifest benchmarks/manifest.json \
+  --minimum-score 100 \
+  -o /tmp/pia-benchmark.json \
+  --markdown /tmp/pia-benchmark.md
+```
+
+The initial synthetic corpus covers:
+
+- a clean layered Python service;
+- an intentional static dependency cycle;
+- a false-completion trap with hardcoded success, unimplemented behavior, mocked-service markers, TODO debt, and an assertion-free test;
+- a JavaScript/TypeScript `apps/` + `packages/` monorepo with a cross-package import.
+
+A 100% benchmark score means only that the deterministic collectors satisfied the declared expectations in these fixtures. It is not an overall accuracy claim for semantic project auditing. The evaluation methodology is documented in `references/evaluation-methodology.md`.
+
 ## Project Command Center
 
 The built-in standalone dashboard currently exposes:
@@ -181,18 +224,18 @@ The built-in standalone dashboard currently exposes:
 Install this repository as a Codex skill or make it available to Codex, then run:
 
 ```text
-Run the Project Intelligence Auditor on this repository. Perform a full evidence-based audit, execute safe validation checks, generate a new audit snapshot, compare it with previous snapshots if present, evaluate readiness gates, and build or update the Project Intelligence Command Center. Do not change product behavior except where minimal audit tooling is required.
+Run the Project Intelligence Auditor on this repository. Perform a full evidence-based audit, execute safe validation checks, generate a new audit snapshot, compare it with previous snapshots if present, evaluate readiness gates, verify audit integrity, and build or update the Project Intelligence Command Center. Do not change product behavior except where minimal audit tooling is required.
 ```
 
-For the full operating procedure, evidence model, scoring rules, domain-specific reviews, and dashboard contract, see `SKILL.md` and `references/`.
+For the full operating procedure, evidence model, scoring rules, domain-specific reviews, evaluation methodology, and dashboard contract, see `SKILL.md` and `references/`.
 
 ## Status
 
-Current development line: **v0.3**.
+Current development line: **v0.4**.
 
-v0.3 adds static architecture inference, evidence-backed dependency bootstrapping, structured readiness scoring with uncertainty bounds, richer snapshot comparison, descriptive trajectory analysis, and expanded Command Center views.
+v0.4 adds self-evaluation: deterministic synthetic benchmark fixtures, a reusable benchmark harness, structural audit-integrity coverage, and an explicit multi-layer evaluation methodology. The purpose is to make failures of the auditor itself reproducible instead of continuously adding heuristics without measuring regressions.
 
-The project is intentionally being developed against real audit use cases rather than treating repository metrics as a proxy for project quality.
+The next layer is a human-reviewed real-world challenge corpus for semantic audit quality: projects where expected critical-path, readiness, false-completion, research/ML, and commercialization conclusions are reviewed independently rather than reduced to brittle exact percentages.
 
 ## License
 
