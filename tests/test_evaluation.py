@@ -5,6 +5,7 @@ from pathlib import Path
 import check_audit_integrity
 import evaluate_benchmarks
 import evaluate_golden_audit
+import prepare_challenge_tasks
 import validate_challenge_corpus
 from audit_utils import load_json
 
@@ -24,6 +25,23 @@ def test_semantic_challenge_corpus_is_structurally_valid() -> None:
     assert result["check_count"] >= 25
     assert result["issue_count"] == 0
     assert result["valid"] is True
+
+
+def test_blind_challenge_tasks_do_not_expose_golden_paths(tmp_path: Path) -> None:
+    tasks = tmp_path / "tasks"
+    results = tmp_path / "results"
+    outcome = prepare_challenge_tasks.prepare(
+        ROOT,
+        ROOT / "challenges" / "manifest.json",
+        tasks,
+        results,
+    )
+    assert outcome["task_count"] == 5
+    for task in tasks.glob("*.md"):
+        text = task.read_text(encoding="utf-8").lower()
+        assert "golden.json" not in text
+        assert "challenge-results" not in text
+        assert "blind calibration run" in text
 
 
 def test_example_audit_has_full_structural_integrity_coverage() -> None:
