@@ -1,26 +1,27 @@
 {
   "metadata": {
-    "generated_at": "2026-08-13T00:00:00+03:00",
-    "auditor_version": "0.2.0",
+    "generated_at": "2026-08-13T08:30:00+00:00",
+    "auditor_version": "0.3.0",
     "repository": "example/project",
     "commit": "example",
     "snapshot_kind": "synthetic-example"
   },
   "project": {
     "name": "Example Project",
-    "mission": "Demonstrate the Project Intelligence Auditor data contract and dashboard.",
+    "mission": "Demonstrate the Project Intelligence Auditor data contract and command center.",
     "target_users": ["developers", "technical leads"],
     "current_stage": "prototype",
-    "trl": 4
+    "trl": 4,
+    "scope_status": "reviewed"
   },
   "scores": {
     "confirmed_completion": 57.8,
     "estimated_completion": 68.0,
     "project_health": 72.0,
     "prototype_readiness": 82.0,
-    "mvp_readiness": 61.0,
+    "mvp_readiness": 78.57,
     "commercial_readiness": 38.0,
-    "production_readiness": 44.0,
+    "production_readiness": 28.57,
     "scale_readiness": 29.0,
     "research_readiness": null,
     "confidence": 84.0
@@ -30,6 +31,7 @@
       "id": "core",
       "name": "Core workflow",
       "path": "src/core",
+      "role_hint": "backend",
       "responsibility": "Execute the primary user workflow.",
       "classification": "critical_path",
       "implementation": 80,
@@ -44,12 +46,15 @@
       "criticality": 1.0,
       "evidence_level": "E3",
       "dependencies": ["storage"],
-      "evidence_ids": ["ev-core-test"]
+      "consumers": [],
+      "evidence_ids": ["ev-core-test", "ev-core-storage-import"],
+      "status": "reviewed"
     },
     {
       "id": "storage",
       "name": "Storage",
       "path": "src/storage",
+      "role_hint": "database",
       "responsibility": "Persist project state.",
       "classification": "important",
       "implementation": 75,
@@ -64,18 +69,29 @@
       "criticality": 0.75,
       "evidence_level": "E2",
       "dependencies": [],
-      "evidence_ids": ["ev-storage-code"]
+      "consumers": ["core"],
+      "evidence_ids": ["ev-storage-code"],
+      "status": "reviewed"
     }
   ],
   "dependency_edges": [
     {
-      "from": "storage",
-      "to": "core",
-      "kind": "runtime",
-      "confidence": 0.9,
-      "evidence_ids": ["ev-core-test"]
+      "from": "core",
+      "to": "storage",
+      "kind": "static_import",
+      "confidence": 0.94,
+      "occurrences": 3,
+      "evidence_ids": ["ev-core-storage-import"]
     }
   ],
+  "architecture_analysis": {
+    "cycles": [],
+    "hotspots": [
+      {"module_id": "storage", "fan_in": 1, "fan_out": 0, "centrality": 1.0}
+    ],
+    "limitations": ["Synthetic static dependency example."],
+    "status": "reviewed"
+  },
   "evidence": [
     {
       "id": "ev-core-test",
@@ -84,7 +100,8 @@
       "kind": "test_result",
       "source": "tests/test_core.py",
       "location": "test_core_workflow",
-      "confidence": 0.9
+      "confidence": 0.9,
+      "verified_at": "2026-08-13T08:00:00+00:00"
     },
     {
       "id": "ev-storage-code",
@@ -93,7 +110,18 @@
       "kind": "implementation",
       "source": "src/storage",
       "location": null,
-      "confidence": 0.8
+      "confidence": 0.8,
+      "verified_at": null
+    },
+    {
+      "id": "ev-core-storage-import",
+      "level": "E2",
+      "claim": "Static imports show that the core workflow depends on storage.",
+      "kind": "static_import_dependency",
+      "source": "src/core/service.py",
+      "location": "line 4",
+      "confidence": 0.94,
+      "verified_at": null
     }
   ],
   "validation_runs": [
@@ -118,7 +146,9 @@
       "evidence_ids": ["ev-core-test"]
     }
   ],
-  "technical_debt": [],
+  "technical_debt": [
+    {"id": "debt-recovery-tests", "title": "Recovery paths lack regression coverage", "severity": "high"}
+  ],
   "bottlenecks": [
     {
       "id": "bottleneck-failure-recovery",
@@ -133,13 +163,15 @@
       "name": "Developer tool",
       "description": "Package the current workflow as a reusable developer-facing tool.",
       "direction_score": 76,
-      "time_to_mvp": "short"
+      "time_to_mvp": "short",
+      "time_to_revenue": "medium"
     },
     {
       "name": "Enterprise platform",
       "description": "Extend the workflow with governance, multi-user controls, and deployment tooling.",
       "direction_score": 58,
-      "time_to_mvp": "medium"
+      "time_to_mvp": "medium",
+      "time_to_revenue": "long"
     }
   ],
   "commercialization": {
@@ -147,36 +179,92 @@
     "value_proposition": "Reduce repeated manual analysis and make project state evidence-driven.",
     "technical_moat": "Workflow integration and audit history rather than a single algorithm.",
     "data_moat": null,
+    "workflow_moat": "Historical evidence and project-specific audit workflow integration.",
     "time_to_revenue": "unknown",
     "primary_blocker": "No verified customer discovery in this synthetic example."
   },
   "readiness_gates": {
     "mvp": {
-      "core_workflow": "pass",
-      "failure_handling": "fail",
-      "reproducible_setup": "unknown"
+      "score_key": "mvp_readiness",
+      "threshold": 75,
+      "minimum_coverage": 0.65,
+      "criteria": [
+        {
+          "id": "core-workflow",
+          "title": "Core workflow is end-to-end",
+          "status": "pass",
+          "weight": 4,
+          "confidence": 0.95,
+          "critical": true,
+          "evidence_ids": ["ev-core-test"]
+        },
+        {
+          "id": "failure-handling",
+          "title": "Critical failure paths are handled",
+          "status": "partial",
+          "weight": 3,
+          "confidence": 0.8,
+          "critical": true,
+          "evidence_ids": ["ev-core-test"]
+        },
+        {
+          "id": "reproducible-setup",
+          "title": "Setup is reproducible for an evaluator",
+          "status": "unknown",
+          "weight": 2,
+          "confidence": 0,
+          "critical": false,
+          "evidence_ids": []
+        }
+      ],
+      "evaluation": {
+        "score": 78.57,
+        "assessed_score": 78.57,
+        "lower_bound": 61.11,
+        "upper_bound": 83.33,
+        "coverage": 77.78,
+        "confidence": 68.89,
+        "threshold": 75,
+        "minimum_coverage": 65,
+        "state": "ready",
+        "blocked": false,
+        "critical_failures": [],
+        "critical_unknowns": [],
+        "status_counts": {"pass": 1, "partial": 1, "fail": 0, "unknown": 1, "not_applicable": 0}
+      }
+    },
+    "production": {
+      "score_key": "production_readiness",
+      "threshold": 80,
+      "minimum_coverage": 0.7,
+      "criteria": [
+        {"id": "validated-core", "status": "partial", "weight": 4, "confidence": 0.85, "critical": true, "evidence_ids": ["ev-core-test"]},
+        {"id": "recovery", "status": "fail", "weight": 3, "confidence": 0.9, "critical": true, "evidence_ids": ["ev-core-test"]},
+        {"id": "observability", "status": "unknown", "weight": 2, "confidence": 0, "critical": false, "evidence_ids": []}
+      ],
+      "evaluation": {
+        "score": 28.57,
+        "assessed_score": 28.57,
+        "lower_bound": 22.22,
+        "upper_bound": 44.44,
+        "coverage": 77.78,
+        "confidence": 67.78,
+        "threshold": 80,
+        "minimum_coverage": 70,
+        "state": "blocked",
+        "blocked": true,
+        "critical_failures": ["recovery"],
+        "critical_unknowns": [],
+        "status_counts": {"pass": 0, "partial": 1, "fail": 1, "unknown": 1, "not_applicable": 0}
+      }
     }
   },
   "recommendations": [
     {
-      "id": "rec-customer-discovery",
-      "title": "Validate the first customer workflow",
-      "priority": "NEXT",
-      "impact": 75,
-      "risk_reduction": 60,
-      "effort": "small",
-      "confidence": 70,
-      "critical_path": false,
-      "unlocks": ["commercial readiness"],
-      "definition_of_done": "At least several relevant users validate the workflow problem and buying path.",
-      "why": "Commercial claims are currently unsupported.",
-      "leverage_score": 32.67,
-      "phase": "NOW"
-    },
-    {
       "id": "rec-integration-tests",
       "title": "Strengthen critical-path failure validation",
       "priority": "NOW",
+      "phase": "NOW",
       "impact": 90,
       "risk_reduction": 85,
       "effort": "medium",
@@ -185,23 +273,79 @@
       "unlocks": ["MVP readiness", "production readiness"],
       "definition_of_done": "Critical-path integration tests cover major failure and recovery modes.",
       "why": "The largest evidence gap is failure behavior on the critical path.",
-      "leverage_score": 31.17,
-      "phase": "NOW"
+      "leverage_score": 31.17
+    },
+    {
+      "id": "rec-customer-discovery",
+      "title": "Validate the first customer workflow",
+      "priority": "NEXT",
+      "phase": "NOW",
+      "impact": 75,
+      "risk_reduction": 60,
+      "effort": "small",
+      "confidence": 70,
+      "critical_path": false,
+      "unlocks": ["commercial readiness"],
+      "definition_of_done": "Several relevant users validate the workflow problem and buying path.",
+      "why": "Commercial claims are currently unsupported.",
+      "leverage_score": 32.67
     }
   ],
-  "limitations": ["This is synthetic example data and does not represent a real project audit."],
-  "history": {},
   "action_plan": {
     "top_actions": ["rec-customer-discovery", "rec-integration-tests"],
-    "highest_leverage_action": "rec-customer-discovery",
-    "phases": {
-      "NOW": ["rec-customer-discovery", "rec-integration-tests"],
-      "NEXT": [],
-      "LATER": [],
-      "OPTIONAL": [],
-      "DEFER": [],
-      "REMOVE": []
-    },
-    "method": "Deterministic leverage heuristic using impact, risk reduction, unlocks, critical-path status, confidence, and normalized effort."
+    "highest_leverage_action": "rec-customer-discovery"
+  },
+  "limitations": ["This is synthetic example data and does not represent a real project audit."],
+  "history": {
+    "trajectory": {
+      "generated_at": "2026-08-13T09:03:32+00:00",
+      "snapshot_count": 3,
+      "score_trends": {
+        "estimated_completion": {
+          "points": 3,
+          "series": [
+            {"timestamp": "2026-06-13T08:30:00+00:00", "value": 56},
+            {"timestamp": "2026-07-13T08:30:00+00:00", "value": 62},
+            {"timestamp": "2026-08-13T08:30:00+00:00", "value": 68}
+          ],
+          "first_value": 56,
+          "latest_value": 68,
+          "latest_delta": 6,
+          "slope_per_day": 0.1967,
+          "delta_per_30d": 5.99,
+          "direction": "improving",
+          "r2": 0.9999,
+          "target": 80,
+          "eta_days": 60.8,
+          "eta_timestamp": "2026-10-13T04:41:48+00:00",
+          "eta_is_descriptive_only": true
+        },
+        "project_health": {
+          "points": 3,
+          "series": [
+            {"timestamp": "2026-06-13T08:30:00+00:00", "value": 64},
+            {"timestamp": "2026-07-13T08:30:00+00:00", "value": 68},
+            {"timestamp": "2026-08-13T08:30:00+00:00", "value": 72}
+          ],
+          "first_value": 64,
+          "latest_value": 72,
+          "latest_delta": 4,
+          "slope_per_day": 0.1311,
+          "delta_per_30d": 3.99,
+          "direction": "improving",
+          "r2": 0.9999,
+          "target": 80,
+          "eta_days": 60.8,
+          "eta_timestamp": "2026-10-13T04:41:48+00:00",
+          "eta_is_descriptive_only": true
+        }
+      },
+      "module_trends": {},
+      "regressions": [],
+      "interpretation": [
+        "Trend estimates are descriptive extrapolations, not delivery commitments.",
+        "Changes in audit methodology, scope, or scoring weights can invalidate direct historical comparisons."
+      ]
+    }
   }
 }
