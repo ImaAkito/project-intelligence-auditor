@@ -32,5 +32,14 @@ jobs:
       - name: Validate example audit
         run: python scripts/validate_audit.py examples/example-audit.json
 
+      - name: Smoke deterministic discovery
+        run: |
+          python scripts/infer_architecture.py . -o /tmp/architecture.json
+          python scripts/run_collectors.py . -o /tmp/discovery.json
+          python scripts/bootstrap_audit.py /tmp/discovery.json -o /tmp/bootstrap-audit.json
+
+      - name: Re-evaluate example readiness
+        run: python scripts/score_readiness.py examples/example-audit.json -o /tmp/scored-example.json
+
       - name: Build example dashboard
         run: python scripts/build_dashboard.py examples/example-audit.json -o /tmp/project-command-center.html
