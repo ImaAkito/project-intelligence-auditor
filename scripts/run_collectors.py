@@ -71,21 +71,51 @@ def run(root: Path | str, collectors: list[tuple[str, Collector]] | None = None)
     }
 
 
+def generate_plan_artifacts(result: dict[str, Any], output: Path) -> dict[str, str] | None:
+    collectors = result.get("collectors", {})
+    profile_outcome = collectors.get("project_profile", {}) if isinstance(collectors, dict) else {}
+    if not isinstance(profile_outcome, dict) or profile_outcome.get("status") != "ok":
+        return None
+    profile = profile_outcome.get("result")
+    if not isinstance(profile, dict):
+        return None
+
+    import generate_audit_plan
+
+    plan = generate_audit_plan.build_plan(profile)
+    plan_path = output.parent / "audit-plan.json"
+    markdown_path = output.parent / "AUDIT_PLAN.md"
+    write_json(plan_path, plan)
+    markdown_path.write_text(generate_audit_plan.render_markdown(plan), encoding="utf-8")
+    return {"json": str(plan_path), "markdown": str(markdown_path)}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Run deterministic Project Intelligence Auditor evidence collectors."
     )
     parser.add_argument("root", nargs="?", default=".", type=Path)
     parser.add_argument("-o", "--output", type=Path, default=Path(".project-audit/discovery.json"))
+    parser.add_argument(
+        "--no-plan",
+        action="store_true",
+        help="Do not generate adaptive audit-plan artifacts next to discovery.json.",
+    )
     args = parser.parse_args()
     result = run(args.root)
     output = args.output
     if not output.is_absolute():
         output = resolve_root(args.root) / output
     write_json(output, result)
+
+    plan_artifacts = None if args.no_plan else generate_plan_artifacts(result, output)
     print(
         json.dumps(
-            {"output": str(output), "failed_collectors": result["failed_collectors"]},
+            {
+                "output": str(output),
+                "failed_collectors": result["failed_collectors"],
+                "adaptive_plan": plan_artifacts,
+            },
             indent=2,
         )
     )
