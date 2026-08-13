@@ -54,6 +54,31 @@ def test_hardware_profile_routes_hardware_and_integration_gates(tmp_path: Path) 
     assert "system_integration" in result["recommended_readiness_gates"]
 
 
+def test_profile_detector_ignores_vendor_directory_hints(tmp_path: Path) -> None:
+    write_pyproject(tmp_path, [])
+    vendor_models = tmp_path / "node_modules" / "some-package" / "models"
+    vendor_models.mkdir(parents=True)
+    (vendor_models / "index.js").write_text("export const demo = true;\n", encoding="utf-8")
+
+    result = detect_project_profile.detect(tmp_path)
+
+    ml = profile_by_id(result, "machine_learning")
+    assert ml["applicable"] is False
+    assert not any("node_modules" in str(signal.get("source")) for signal in ml["signals"])
+
+
+def test_terraform_suffix_routes_infrastructure_review(tmp_path: Path) -> None:
+    (tmp_path / "main.tf").write_text(
+        'terraform { required_version = ">= 1.5" }\n',
+        encoding="utf-8",
+    )
+    (tmp_path / "variables.tf").write_text('variable "region" {}\n', encoding="utf-8")
+
+    result = detect_project_profile.detect(tmp_path)
+
+    assert "devops_infrastructure" in result["applicable_profiles"]
+
+
 def test_research_plan_preserves_research_production_separation(tmp_path: Path) -> None:
     write_pyproject(tmp_path, ["scipy>=1.13", "statsmodels>=0.14"])
     experiments = tmp_path / "experiments"
@@ -73,11 +98,14 @@ def test_research_plan_preserves_research_production_separation(tmp_path: Path) 
     assert "Do not assume a test command" in validation_phase["note"]
 
 
-def test_discovery_and_bootstrap_carry_profile_routing(tmp_path: Path) -> None:
+def test_discovery_bootstrap_and_plan_carry_profile_routing(tmp_path: Path) -> None:
     write_pyproject(tmp_path, ["fastapi>=0.115"])
     api = tmp_path / "api"
     api.mkdir()
-    (api / "main.py").write_text("from fastapi import FastAPI\napp = FastAPI()\n", encoding="utf-8")
+    (api / "main.py").write_text(
+        "from fastapi import FastAPI\napp = FastAPI()\n",
+        encoding="utf-8",
+    )
 
     discovery = run_collectors.run(tmp_path)
     assert discovery["collectors"]["project_profile"]["status"] == "ok"
@@ -88,3 +116,12 @@ def test_discovery_and_bootstrap_carry_profile_routing(tmp_path: Path) -> None:
     assert "commercial" in audit["project_profile"]["recommended_readiness_gates"]
     assert "scale" in audit["project_profile"]["recommended_readiness_gates"]
     assert audit["scores"]["clinical_readiness"] is None
+
+    discovery_path = tmp_path / ".project-audit" / "discovery.json"
+    plan_paths = run_collectors.generate_plan_artifacts(discovery, discovery_path)
+    assert plan_paths is not None
+    plan_json = Path(plan_paths["json"])
+    plan_md = Path(plan_paths["markdown"])
+    assert plan_json.is_file()
+    assert plan_md.is_file()
+    assert "web_backend" in plan_md.read_text(encoding="utf-8")
