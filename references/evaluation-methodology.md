@@ -31,7 +31,9 @@ The resulting `integrity_coverage` measures structural traceability, not semanti
 
 Real audit quality requires repositories where expected high-level conclusions are known or reviewed by a competent human.
 
-Evaluate dimensions separately:
+Read `references/semantic-calibration.md` and use the challenge corpus under `challenges/`.
+
+Evaluate dimensions separately.
 
 ### Scope reconstruction
 
@@ -79,22 +81,38 @@ Evaluate dimensions separately:
 - Is technical sophistication kept separate from customer value and willingness to pay?
 - Are commercialization gaps explicit?
 
-## Layer 4 — Adversarial benchmark projects
+## Layer 4 — Adversarial semantic challenge projects
 
-The evaluation corpus should intentionally include projects that tempt an auditor into incorrect conclusions:
+Use `challenges/manifest.json` as the corpus index.
 
-- polished UI over mocked backend;
-- many tests with weak assertions;
-- large repository with little usable functionality;
-- tiny repository with a complete narrow product;
-- ML project with train/inference preprocessing drift;
-- medical AI project with internal-only validation;
-- project with excellent engineering but no product-market evidence;
-- monorepo where folder names do not equal architectural boundaries;
-- high commit velocity with declining quality;
-- dormant project that is nevertheless technically complete.
+The corpus should intentionally contain projects that tempt the auditor into incorrect conclusions. Current v0.5 challenge families include:
 
-These cases are more valuable than randomly sampling repositories because each targets a known failure mode.
+- polished UI over demo/hardcoded backend behavior;
+- ML evaluation with preprocessing leakage and patient-level split errors;
+- medical AI with strong internal metrics but missing external/clinical validation;
+- reproducible research artifact without production operations;
+- technically competent developer tooling without customer/commercial evidence.
+
+Validate corpus structure:
+
+```bash
+python scripts/validate_challenge_corpus.py
+```
+
+After independently running the auditor on every fixture and saving `<case-id>.json` outputs, evaluate:
+
+```bash
+python scripts/evaluate_challenge_corpus.py \
+  .project-audit/challenge-results \
+  --require-all \
+  --minimum-score 80
+```
+
+The challenge evaluator supports broad numeric ranges, score relations, readiness-state sets, semantic text requirements, commercialization-field state checks, and critical checks.
+
+A critical semantic failure must remain visible even when the weighted score is high.
+
+Do not interpret the aggregate challenge score as universal audit accuracy.
 
 ## Layer 5 — Longitudinal consistency
 
@@ -110,18 +128,20 @@ For repeated audits of the same repository, verify that:
 
 ## Golden audit protocol
 
-A real-world fixture can have a human-reviewed `golden.json` containing ranges or categorical expectations rather than exact percentages.
+A real-world fixture can have a human-reviewed `golden.json` containing ranges, relations, semantic requirements, or categorical expectations rather than exact percentages.
 
 Prefer expectations such as:
 
 - core module must be classified `critical_path`;
 - production readiness must remain blocked while recovery is absent;
+- research readiness should materially exceed production readiness for a research-only artifact;
 - commercial readiness must remain low-confidence without customer evidence;
-- static dependency X -> Y must exist;
-- finding Z must be surfaced;
+- a leakage or external-validation risk must be surfaced;
 - completion should fall within a broad reviewed range.
 
-Avoid brittle goldens that assert an arbitrary exact percentage.
+Use `critical: true` for conclusions whose omission materially invalidates the audit. Critical failures are counted separately from the weighted score.
+
+Avoid brittle goldens that assert an arbitrary exact percentage or require one preferred wording when several correct descriptions are possible.
 
 ## Benchmark governance
 
@@ -133,4 +153,15 @@ When a real audit exposes a reproducible deterministic bug:
 4. keep the fixture permanently as a regression case;
 5. document what the fixture does and does not prove.
 
-When a semantic failure is discovered, add it to the human-reviewed challenge corpus instead of pretending a simple deterministic assertion can represent nuanced judgment.
+When a semantic failure is discovered:
+
+1. isolate the reasoning trap;
+2. remove confidential/project-specific details;
+3. create a minimized challenge fixture;
+4. write a reviewed golden contract using ranges/categories/relations;
+5. mark truly decisive expectations as critical;
+6. demonstrate the failure before changing the auditor;
+7. improve instructions, tools, scoring, or references;
+8. keep the challenge permanently.
+
+This turns real audit mistakes into a growing semantic regression corpus instead of relying on anecdotal confidence.
