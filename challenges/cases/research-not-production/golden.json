@@ -1,0 +1,49 @@
+{
+  "id": "research-not-production",
+  "notes": [
+    "The fixture is intentionally strong as a research artifact and weak as an operational product.",
+    "The auditor should preserve this asymmetry rather than collapsing all readiness concepts into one score."
+  ],
+  "checks": [
+    {
+      "type": "score_relation",
+      "left": "research_readiness",
+      "op": ">",
+      "right": "production_readiness",
+      "margin": 20,
+      "critical": true,
+      "weight": 4
+    },
+    {
+      "type": "score_range",
+      "key": "research_readiness",
+      "min": 65,
+      "weight": 2
+    },
+    {
+      "type": "score_range",
+      "key": "production_readiness",
+      "max": 50,
+      "critical": true,
+      "weight": 3
+    },
+    {
+      "type": "readiness_state_in",
+      "gate": "production",
+      "allowed": ["not_ready", "blocked", "critical_evidence_missing", "insufficient_evidence"],
+      "weight": 2
+    },
+    {
+      "type": "item_text_contains",
+      "section": "directions",
+      "text": "research",
+      "weight": 1
+    },
+    {
+      "type": "item_text_contains",
+      "section": "risks",
+      "text": "deployment",
+      "weight": 1
+    }
+  ]
+}
